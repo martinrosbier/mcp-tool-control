@@ -2,6 +2,8 @@
 
 A small TypeScript MCP foundation for exploring controlled tool execution.
 
+The project is evolving toward an opinionated TypeScript MCP reference implementation with explicit policy, approval, filesystem-containment, safe-error, and audit boundaries around privileged side effects.
+
 The repository currently demonstrates two deliberately limited tools:
 
 - `inspect-text`: a read-only tool that returns bounded metadata without echoing input.
