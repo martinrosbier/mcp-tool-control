@@ -5,12 +5,14 @@ import { z } from "zod";
 import { planChangesDefinition, runPlanChanges } from "./tools/plan-changes.js";
 import { inspectTextTool } from "./tools/inspect-text.js";
 import { ToolRegistry, UnknownToolError } from "./tools/tool.js";
+import { PolicyDeniedError } from "./policy/tool-policy.js";
 import { SERVER_VERSION } from "./version.js";
 
 const registry = new ToolRegistry([
   inspectTextTool,
   {
     definition: planChangesDefinition,
+    policy: { access: "plan", requiresApproval: false },
     run: (input) => runPlanChanges(undefined, input),
   },
 ]);
@@ -25,6 +27,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ? "Invalid tool arguments"
       : error instanceof UnknownToolError
         ? "Unknown tool"
+        : error instanceof PolicyDeniedError
+          ? "Tool execution denied by policy"
         : "Tool execution failed";
     console.error(error);
     return { content: [{ type: "text", text: message }], isError: true };

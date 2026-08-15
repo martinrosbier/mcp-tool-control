@@ -86,6 +86,10 @@ export const planChangesDefinition = {
     },
     required: ["description", "files"],
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+  },
 };
 
 /**

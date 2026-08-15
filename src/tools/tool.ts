@@ -7,10 +7,15 @@ export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+  };
 }
 
 export interface RegisteredTool {
   definition: ToolDefinition;
+  policy: ToolPolicy;
   run(input: unknown): Promise<TextContent[]>;
 }
 
@@ -31,6 +36,7 @@ export class ToolRegistry {
       if (this.toolsByName.has(tool.definition.name)) {
         throw new Error(`Duplicate tool: ${tool.definition.name}`);
       }
+      validateToolPolicy(tool.policy);
       this.toolsByName.set(tool.definition.name, tool);
     }
   }
@@ -39,9 +45,20 @@ export class ToolRegistry {
     return [...this.toolsByName.values()].map((tool) => tool.definition);
   }
 
-  async execute(name: string, input: unknown): Promise<TextContent[]> {
+  async execute(
+    name: string,
+    input: unknown,
+    context: ToolExecutionContext = {},
+  ): Promise<TextContent[]> {
     const tool = this.toolsByName.get(name);
     if (!tool) throw new UnknownToolError(name);
+    enforceToolPolicy(tool.policy, context);
     return tool.run(input);
   }
 }
+import {
+  enforceToolPolicy,
+  validateToolPolicy,
+  type ToolExecutionContext,
+  type ToolPolicy,
+} from "../policy/tool-policy.js";

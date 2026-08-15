@@ -6,6 +6,7 @@ export const InspectTextInputSchema = z.object({
 });
 
 export const inspectTextTool: RegisteredTool = {
+  policy: { access: "read", requiresApproval: false },
   definition: {
     name: "inspect-text",
     description:
@@ -20,6 +21,10 @@ export const inspectTextTool: RegisteredTool = {
         },
       },
       required: ["text"],
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
     },
   },
   async run(rawInput) {
