@@ -1,0 +1,47 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Tests
+tests
+*.test.ts
+*.test.js
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+playbook
+examples
+
+# Build artifacts
+dist
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.pre-commit-config.yaml
+tsconfig.json
+vitest.config.ts
+*.postman_collection.json
