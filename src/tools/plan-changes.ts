@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildAnnouncement } from "../lib/announcement.js";
 import { detectConflicts, type FileToWrite } from "../lib/conflicts.js";
 import type { PendingChangePlanStore } from "../plans/pending-change-plan-store.js";
+import { captureFileStates } from "../security/file-state.js";
 import { SERVER_VERSION } from "../version.js";
 import type { RegisteredTool } from "./tool.js";
 
@@ -96,11 +97,13 @@ export const planChangesDefinition = {
 };
 
 /**
- * Execute the plan-changes tool. Stores a pending plan, but performs no AI calls or disk I/O.
+ * Execute the plan-changes tool. Reads target state and stores a pending plan,
+ * but performs no AI calls or filesystem writes.
  */
 export async function runPlanChanges(
   planStore: PendingChangePlanStore,
-  rawInput: unknown
+  rawInput: unknown,
+  allowedRoot: string = process.cwd(),
 ): Promise<{ type: "text"; text: string }[]> {
   const input = PlanChangesInputSchema.parse(rawInput);
 
@@ -120,13 +123,17 @@ export async function runPlanChanges(
     conflicts,
     suggestedCommit,
   });
-  const pendingPlan = planStore.store(kept);
+  const capturedPlan = await captureFileStates(allowedRoot, kept);
+  const pendingPlan = planStore.store(
+    capturedPlan.files,
+    capturedPlan.expectedFiles,
+  );
 
   const response = {
     plan_id: pendingPlan.id,
     expires_at: pendingPlan.expiresAt,
     announcement,
-    files_to_write: kept,
+    files_to_write: pendingPlan.files,
     conflicts,
     summary: `Planned ${kept.length} file write(s) for "${input.description}". ${conflicts.length} conflict(s) flagged.`,
     follow_up_suggestions: [
@@ -142,10 +149,11 @@ export async function runPlanChanges(
 
 export function createPlanChangesTool(
   planStore: PendingChangePlanStore,
+  allowedRoot: string = process.cwd(),
 ): RegisteredTool {
   return {
     definition: planChangesDefinition,
     policy: { access: "plan", requiresApproval: false },
-    run: (input) => runPlanChanges(planStore, input),
+    run: (input) => runPlanChanges(planStore, input, allowedRoot),
   };
 }

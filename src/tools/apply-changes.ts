@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { ApprovalState } from "../approval/trusted-approval-boundary.js";
 import { PolicyDeniedError } from "../policy/tool-policy.js";
 import type { PendingChangePlanStore } from "../plans/pending-change-plan-store.js";
+import { assertPlanFileStatesUnchanged } from "../security/file-state.js";
 import type { RegisteredTool } from "./tool.js";
 
 export const ApplyChangesInputSchema = z.object({
@@ -11,6 +12,7 @@ export const ApplyChangesInputSchema = z.object({
 export function createApplyChangesTool(
   plans: PendingChangePlanStore,
   approvals: ApprovalState,
+  allowedRoot: string = process.cwd(),
 ): RegisteredTool {
   function requireApprovedPlan(rawInput: unknown) {
     const { plan_id: planId } = ApplyChangesInputSchema.parse(rawInput);
@@ -56,13 +58,14 @@ export function createApplyChangesTool(
     },
     async run(rawInput) {
       const plan = requireApprovedPlan(rawInput);
+      await assertPlanFileStatesUnchanged(allowedRoot, plan);
       return [{
         type: "text",
         text: JSON.stringify({
           plan_id: plan.id,
-          status: "approved",
+          status: "validated",
           file_count: plan.files.length,
-          message: "Approved plan is ready for filesystem validation.",
+          message: "Approved plan passed filesystem state validation.",
         }),
       }];
     },

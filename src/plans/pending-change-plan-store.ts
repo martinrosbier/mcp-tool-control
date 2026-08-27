@@ -3,9 +3,14 @@ import type { FileToWrite } from "../lib/conflicts.js";
 
 export const DEFAULT_CHANGE_PLAN_TTL_MS = 10 * 60 * 1_000;
 
+export type ExpectedFileState =
+  | Readonly<{ path: string; kind: "missing" }>
+  | Readonly<{ path: string; kind: "file"; contentHash: string }>;
+
 export interface PendingChangePlan {
   readonly id: string;
   readonly files: readonly Readonly<FileToWrite>[];
+  readonly expectedFiles: readonly ExpectedFileState[];
   readonly createdAt: string;
   readonly expiresAt: string;
 }
@@ -29,8 +34,11 @@ export class PendingChangePlanStore {
     }
   }
 
-  store(files: FileToWrite[]): PendingChangePlan {
-    const id = createChangePlanId(files);
+  store(
+    files: FileToWrite[],
+    expectedFiles: ExpectedFileState[] = [],
+  ): PendingChangePlan {
+    const id = createChangePlanId(files, expectedFiles);
     const existing = this.get(id);
     if (existing) return existing;
 
@@ -38,9 +46,13 @@ export class PendingChangePlanStore {
     const storedFiles = Object.freeze(
       files.map((file) => Object.freeze({ ...file })),
     );
+    const storedExpectedFiles = Object.freeze(
+      expectedFiles.map((state) => Object.freeze({ ...state })),
+    );
     const plan = Object.freeze({
       id,
       files: storedFiles,
+      expectedFiles: storedExpectedFiles,
       createdAt: new Date(createdAtMs).toISOString(),
       expiresAt: new Date(createdAtMs + this.ttlMs).toISOString(),
     });

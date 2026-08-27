@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTrustedApprovalBoundary,
 } from "../../src/approval/trusted-approval-boundary";
@@ -14,17 +17,29 @@ const files = [
   { path: "notes/example.txt", content: "hello", purpose: "add a note" },
 ];
 
+let allowedRoot: string;
+
 function setup() {
   const plans = new PendingChangePlanStore();
-  const plan = plans.store(files);
+  const plan = plans.store(files, [
+    { path: "notes/example.txt", kind: "missing" },
+  ]);
   const boundary = createTrustedApprovalBoundary(plans);
   const registry = new ToolRegistry([
-    createApplyChangesTool(plans, boundary.state),
+    createApplyChangesTool(plans, boundary.state, allowedRoot),
   ]);
   return { plan, boundary, registry };
 }
 
 describe("apply-changes tool", () => {
+  beforeEach(async () => {
+    allowedRoot = await mkdtemp(path.join(os.tmpdir(), "mcp-tool-control-apply-"));
+  });
+
+  afterEach(async () => {
+    await rm(allowedRoot, { recursive: true, force: true });
+  });
+
   it("is registered as an approval-gated write tool", () => {
     const { registry } = setup();
     const definition = registry.list()[0];
@@ -68,9 +83,9 @@ describe("apply-changes tool", () => {
 
     expect(response).toEqual({
       plan_id: plan.id,
-      status: "approved",
+      status: "validated",
       file_count: 1,
-      message: "Approved plan is ready for filesystem validation.",
+      message: "Approved plan passed filesystem state validation.",
     });
   });
 });

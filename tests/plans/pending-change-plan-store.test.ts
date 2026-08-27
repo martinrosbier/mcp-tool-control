@@ -41,6 +41,18 @@ describe("PendingChangePlanStore", () => {
     expect(duplicate.expiresAt).toBe("1970-01-01T00:00:01.500Z");
   });
 
+  it("includes expected filesystem state in plan identity", () => {
+    const store = new PendingChangePlanStore();
+    const missing = store.store(files, [
+      { path: files[0].path, kind: "missing" },
+    ]);
+    const existing = store.store(files, [
+      { path: files[0].path, kind: "file", contentHash: "abc123" },
+    ]);
+
+    expect(existing.id).not.toBe(missing.id);
+  });
+
   it("removes expired plans", () => {
     let now = 1_000;
     const store = new PendingChangePlanStore({ ttlMs: 500, now: () => now });

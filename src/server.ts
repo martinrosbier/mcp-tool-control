@@ -13,10 +13,11 @@ import { createApplyChangesTool } from "./tools/apply-changes.js";
 
 const planStore = new PendingChangePlanStore();
 const approvalBoundary = createTrustedApprovalBoundary(planStore);
+const allowedRoot = process.cwd();
 const registry = new ToolRegistry([
   inspectTextTool,
-  createPlanChangesTool(planStore),
-  createApplyChangesTool(planStore, approvalBoundary.state),
+  createPlanChangesTool(planStore, allowedRoot),
+  createApplyChangesTool(planStore, approvalBoundary.state, allowedRoot),
 ]);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });
