@@ -16,6 +16,7 @@ export interface ToolDefinition {
 export interface RegisteredTool {
   definition: ToolDefinition;
   policy: ToolPolicy;
+  approvalPlanId?(input: unknown): string | undefined;
   run(input: unknown): Promise<TextContent[]>;
 }
 
@@ -36,7 +37,7 @@ export class ToolRegistry {
       if (this.toolsByName.has(tool.definition.name)) {
         throw new Error(`Duplicate tool: ${tool.definition.name}`);
       }
-      validateToolPolicy(tool.policy);
+      validateToolPolicy(tool.policy, tool.approvalPlanId !== undefined);
       this.toolsByName.set(tool.definition.name, tool);
     }
   }
@@ -52,7 +53,8 @@ export class ToolRegistry {
   ): Promise<TextContent[]> {
     const tool = this.toolsByName.get(name);
     if (!tool) throw new UnknownToolError(name);
-    enforceToolPolicy(tool.policy, context);
+    const planId = tool.approvalPlanId?.(input);
+    enforceToolPolicy(tool.policy, context, name, planId);
     return tool.run(input);
   }
 }

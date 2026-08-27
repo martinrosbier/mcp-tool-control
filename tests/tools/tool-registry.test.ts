@@ -42,21 +42,56 @@ describe("ToolRegistry", () => {
   it("denies approval-gated tools without approval", async () => {
     const tool = makeTool("write-file");
     tool.policy = { access: "write", requiresApproval: true };
+    tool.approvalPlanId = (input) => (input as { plan_id?: string }).plan_id;
     const registry = new ToolRegistry([tool]);
 
-    await expect(registry.execute("write-file", {})).rejects.toThrow(
-      "Tool execution requires approval",
+    await expect(registry.execute("write-file", { plan_id: "plan_first" })).rejects.toThrow(
+      "Tool execution requires approval for this plan",
     );
+    expect(tool.run).not.toHaveBeenCalled();
+  });
+
+  it("rejects approval-gated tools without a plan binding", () => {
+    const tool = makeTool("write-file");
+    tool.policy = { access: "write", requiresApproval: true };
+
+    expect(() => new ToolRegistry([tool])).toThrow(
+      "Approval-gated tools must bind execution to a plan identifier",
+    );
+  });
+
+  it("denies approval issued for another tool or plan", async () => {
+    const tool = makeTool("write-file");
+    tool.policy = { access: "write", requiresApproval: true };
+    tool.approvalPlanId = (input) => (input as { plan_id?: string }).plan_id;
+    const registry = new ToolRegistry([tool]);
+
+    await expect(registry.execute(
+      "write-file",
+      { plan_id: "plan_first" },
+      { approval: { toolName: "other-tool", planId: "plan_first" } },
+    )).rejects.toThrow("Tool execution requires approval for this plan");
+
+    await expect(registry.execute(
+      "write-file",
+      { plan_id: "plan_first" },
+      { approval: { toolName: "write-file", planId: "plan_other" } },
+    )).rejects.toThrow("Tool execution requires approval for this plan");
     expect(tool.run).not.toHaveBeenCalled();
   });
 
   it("allows an approved write tool to execute", async () => {
     const tool = makeTool("write-file");
     tool.policy = { access: "write", requiresApproval: true };
+    tool.approvalPlanId = (input) => (input as { plan_id?: string }).plan_id;
     const registry = new ToolRegistry([tool]);
 
     await expect(
-      registry.execute("write-file", {}, { approvalGranted: true }),
+      registry.execute(
+        "write-file",
+        { plan_id: "plan_first" },
+        { approval: { toolName: "write-file", planId: "plan_first" } },
+      ),
     ).resolves.toEqual([{ type: "text", text: "write-file result" }]);
   });
 });
