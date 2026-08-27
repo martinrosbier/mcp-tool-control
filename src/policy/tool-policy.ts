@@ -5,10 +5,6 @@ export interface ToolPolicy {
   requiresApproval: boolean;
 }
 
-export interface ToolExecutionContext {
-  approvalGranted?: boolean;
-}
-
 export class PolicyDeniedError extends Error {
   constructor(message: string) {
     super(message);
@@ -16,17 +12,14 @@ export class PolicyDeniedError extends Error {
   }
 }
 
-export function validateToolPolicy(policy: ToolPolicy): void {
+export function validateToolPolicy(
+  policy: ToolPolicy,
+  hasTrustedAuthorizer: boolean,
+): void {
   if (policy.access === "write" && !policy.requiresApproval) {
     throw new Error("Write tools must require approval");
   }
-}
-
-export function enforceToolPolicy(
-  policy: ToolPolicy,
-  context: ToolExecutionContext,
-): void {
-  if (policy.requiresApproval && !context.approvalGranted) {
-    throw new PolicyDeniedError("Tool execution requires approval");
+  if (policy.requiresApproval && !hasTrustedAuthorizer) {
+    throw new Error("Approval-gated tools must use a trusted authorizer");
   }
 }

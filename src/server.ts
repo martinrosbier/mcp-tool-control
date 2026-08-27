@@ -8,11 +8,15 @@ import { ToolRegistry, UnknownToolError } from "./tools/tool.js";
 import { PolicyDeniedError } from "./policy/tool-policy.js";
 import { SERVER_VERSION } from "./version.js";
 import { PendingChangePlanStore } from "./plans/pending-change-plan-store.js";
+import { createTrustedApprovalBoundary } from "./approval/trusted-approval-boundary.js";
+import { createApplyChangesTool } from "./tools/apply-changes.js";
 
 const planStore = new PendingChangePlanStore();
+const approvalBoundary = createTrustedApprovalBoundary(planStore);
 const registry = new ToolRegistry([
   inspectTextTool,
   createPlanChangesTool(planStore),
+  createApplyChangesTool(planStore, approvalBoundary.state),
 ]);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });

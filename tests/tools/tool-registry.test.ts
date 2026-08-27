@@ -42,6 +42,9 @@ describe("ToolRegistry", () => {
   it("denies approval-gated tools without approval", async () => {
     const tool = makeTool("write-file");
     tool.policy = { access: "write", requiresApproval: true };
+    tool.authorize = vi.fn(() => {
+      throw new Error("Tool execution requires approval");
+    });
     const registry = new ToolRegistry([tool]);
 
     await expect(registry.execute("write-file", {})).rejects.toThrow(
@@ -50,13 +53,24 @@ describe("ToolRegistry", () => {
     expect(tool.run).not.toHaveBeenCalled();
   });
 
+  it("rejects approval-gated tools without a trusted authorizer", () => {
+    const tool = makeTool("write-file");
+    tool.policy = { access: "write", requiresApproval: true };
+
+    expect(() => new ToolRegistry([tool])).toThrow(
+      "Approval-gated tools must use a trusted authorizer",
+    );
+  });
+
   it("allows an approved write tool to execute", async () => {
     const tool = makeTool("write-file");
     tool.policy = { access: "write", requiresApproval: true };
+    tool.authorize = vi.fn();
     const registry = new ToolRegistry([tool]);
 
-    await expect(
-      registry.execute("write-file", {}, { approvalGranted: true }),
-    ).resolves.toEqual([{ type: "text", text: "write-file result" }]);
+    await expect(registry.execute("write-file", {})).resolves.toEqual([
+      { type: "text", text: "write-file result" },
+    ]);
+    expect(tool.authorize).toHaveBeenCalledWith({});
   });
 });

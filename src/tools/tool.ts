@@ -16,6 +16,7 @@ export interface ToolDefinition {
 export interface RegisteredTool {
   definition: ToolDefinition;
   policy: ToolPolicy;
+  authorize?(input: unknown): void;
   run(input: unknown): Promise<TextContent[]>;
 }
 
@@ -36,7 +37,7 @@ export class ToolRegistry {
       if (this.toolsByName.has(tool.definition.name)) {
         throw new Error(`Duplicate tool: ${tool.definition.name}`);
       }
-      validateToolPolicy(tool.policy);
+      validateToolPolicy(tool.policy, tool.authorize !== undefined);
       this.toolsByName.set(tool.definition.name, tool);
     }
   }
@@ -45,20 +46,14 @@ export class ToolRegistry {
     return [...this.toolsByName.values()].map((tool) => tool.definition);
   }
 
-  async execute(
-    name: string,
-    input: unknown,
-    context: ToolExecutionContext = {},
-  ): Promise<TextContent[]> {
+  async execute(name: string, input: unknown): Promise<TextContent[]> {
     const tool = this.toolsByName.get(name);
     if (!tool) throw new UnknownToolError(name);
-    enforceToolPolicy(tool.policy, context);
+    if (tool.policy.requiresApproval) tool.authorize!(input);
     return tool.run(input);
   }
 }
 import {
-  enforceToolPolicy,
   validateToolPolicy,
-  type ToolExecutionContext,
   type ToolPolicy,
 } from "../policy/tool-policy.js";
