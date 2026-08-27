@@ -1,9 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import fs from "fs/promises";
 import { runPlanChanges, PlanChangesInputSchema } from "../../src/tools/plan-changes";
 import { SERVER_VERSION } from "../../src/version";
+import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
 
 describe("plan-changes tool", () => {
+  let planStore: PendingChangePlanStore;
+
+  beforeEach(() => {
+    planStore = new PendingChangePlanStore();
+  });
+
   it("returns the planner-only response shape", async () => {
     const input = {
       description: "add hello world",
@@ -12,7 +19,7 @@ describe("plan-changes tool", () => {
       ],
     };
 
-    const result = await runPlanChanges(null, input);
+    const result = await runPlanChanges(planStore, input);
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe("text");
 
@@ -20,6 +27,7 @@ describe("plan-changes tool", () => {
 
     // Shape contract — every key the desktop POC depends on must be present
     expect(response).toHaveProperty("plan_id");
+    expect(response).toHaveProperty("expires_at");
     expect(response).toHaveProperty("announcement");
     expect(response).toHaveProperty("files_to_write");
     expect(response).toHaveProperty("conflicts");
@@ -33,6 +41,7 @@ describe("plan-changes tool", () => {
     expect(Array.isArray(response.follow_up_suggestions)).toBe(true);
     expect(response.plan_id).toMatch(/^plan_[a-f0-9]{64}$/);
     expect(response.server_version).toBe(SERVER_VERSION);
+    expect(planStore.get(response.plan_id)?.files).toEqual(response.files_to_write);
 
     expect(response.files_to_write).toHaveLength(1);
     expect(response.files_to_write[0]).toMatchObject({
@@ -46,7 +55,7 @@ describe("plan-changes tool", () => {
   });
 
   it("uses the caller-supplied suggested_commit when provided", async () => {
-    const result = await runPlanChanges(null, {
+    const result = await runPlanChanges(planStore, {
       description: "add config",
       files: [{ path: "a.txt", content: "x", purpose: "p" }],
       suggested_commit: "feat: custom message",
@@ -60,8 +69,8 @@ describe("plan-changes tool", () => {
       description: "first description",
       files: [{ path: "a.txt", content: "x", purpose: "first purpose" }],
     };
-    const first = JSON.parse((await runPlanChanges(null, input))[0].text);
-    const second = JSON.parse((await runPlanChanges(null, {
+    const first = JSON.parse((await runPlanChanges(planStore, input))[0].text);
+    const second = JSON.parse((await runPlanChanges(planStore, {
       ...input,
       description: "different description",
       files: [{ ...input.files[0], purpose: "different purpose" }],
@@ -75,8 +84,8 @@ describe("plan-changes tool", () => {
       description: "write a file",
       files: [{ path: "a.txt", content: "first", purpose: "demo" }],
     };
-    const first = JSON.parse((await runPlanChanges(null, baseInput))[0].text);
-    const changed = JSON.parse((await runPlanChanges(null, {
+    const first = JSON.parse((await runPlanChanges(planStore, baseInput))[0].text);
+    const changed = JSON.parse((await runPlanChanges(planStore, {
       ...baseInput,
       files: [{ ...baseInput.files[0], content: "second" }],
     }))[0].text);
@@ -95,7 +104,7 @@ describe("plan-changes tool", () => {
       ],
     };
 
-    const result = await runPlanChanges(null, input);
+    const result = await runPlanChanges(planStore, input);
     const response = JSON.parse(result[0].text);
 
     expect(response.files_to_write).toHaveLength(1);
@@ -109,7 +118,7 @@ describe("plan-changes tool", () => {
   });
 
   it("skips no-op writes when existing content is identical", async () => {
-    const result = await runPlanChanges(null, {
+    const result = await runPlanChanges(planStore, {
       description: "noop",
       files: [{ path: "a.txt", content: "same", purpose: "p" }],
       existing_files: [{ path: "a.txt", content: "same" }],
@@ -123,7 +132,7 @@ describe("plan-changes tool", () => {
     const writeSpy = vi.spyOn(fs, "writeFile");
     const mkdirSpy = vi.spyOn(fs, "mkdir");
 
-    await runPlanChanges(null, {
+    await runPlanChanges(planStore, {
       description: "fs check",
       files: [{ path: "x.txt", content: "y", purpose: "p" }],
     });

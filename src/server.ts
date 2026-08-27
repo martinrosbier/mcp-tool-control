@@ -2,15 +2,17 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { planChangesTool } from "./tools/plan-changes.js";
+import { createPlanChangesTool } from "./tools/plan-changes.js";
 import { inspectTextTool } from "./tools/inspect-text.js";
 import { ToolRegistry, UnknownToolError } from "./tools/tool.js";
 import { PolicyDeniedError } from "./policy/tool-policy.js";
 import { SERVER_VERSION } from "./version.js";
+import { PendingChangePlanStore } from "./plans/pending-change-plan-store.js";
 
+const planStore = new PendingChangePlanStore();
 const registry = new ToolRegistry([
   inspectTextTool,
-  planChangesTool,
+  createPlanChangesTool(planStore),
 ]);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });
