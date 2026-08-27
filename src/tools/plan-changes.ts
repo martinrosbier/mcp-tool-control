@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildAnnouncement } from "../lib/announcement.js";
+import { createChangePlanId } from "../lib/change-plan.js";
 import { detectConflicts, type FileToWrite } from "../lib/conflicts.js";
 import { SERVER_VERSION } from "../version.js";
 import type { RegisteredTool } from "./tool.js";
@@ -118,15 +119,17 @@ export async function runPlanChanges(
     conflicts,
     suggestedCommit,
   });
+  const planId = createChangePlanId(kept);
 
   const response = {
+    plan_id: planId,
     announcement,
     files_to_write: kept,
     conflicts,
     summary: `Planned ${kept.length} file write(s) for "${input.description}". ${conflicts.length} conflict(s) flagged.`,
     follow_up_suggestions: [
       "Show the announcement and conflicts to the user before applying.",
-      "Apply files only after the user approves the plan.",
+      `Apply files only after the user approves plan ${planId}.`,
       "Use the suggested_commit (or override) when creating the checkpoint commit.",
     ],
     server_version: SERVER_VERSION,

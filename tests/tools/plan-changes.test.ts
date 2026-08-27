@@ -19,6 +19,7 @@ describe("plan-changes tool", () => {
     const response = JSON.parse(result[0].text);
 
     // Shape contract — every key the desktop POC depends on must be present
+    expect(response).toHaveProperty("plan_id");
     expect(response).toHaveProperty("announcement");
     expect(response).toHaveProperty("files_to_write");
     expect(response).toHaveProperty("conflicts");
@@ -30,6 +31,7 @@ describe("plan-changes tool", () => {
     expect(Array.isArray(response.files_to_write)).toBe(true);
     expect(Array.isArray(response.conflicts)).toBe(true);
     expect(Array.isArray(response.follow_up_suggestions)).toBe(true);
+    expect(response.plan_id).toMatch(/^plan_[a-f0-9]{64}$/);
     expect(response.server_version).toBe(SERVER_VERSION);
 
     expect(response.files_to_write).toHaveLength(1);
@@ -51,6 +53,35 @@ describe("plan-changes tool", () => {
     });
     const response = JSON.parse(result[0].text);
     expect(response.announcement).toContain("feat: custom message");
+  });
+
+  it("returns the same identifier for the same executable writes", async () => {
+    const input = {
+      description: "first description",
+      files: [{ path: "a.txt", content: "x", purpose: "first purpose" }],
+    };
+    const first = JSON.parse((await runPlanChanges(null, input))[0].text);
+    const second = JSON.parse((await runPlanChanges(null, {
+      ...input,
+      description: "different description",
+      files: [{ ...input.files[0], purpose: "different purpose" }],
+    }))[0].text);
+
+    expect(first.plan_id).toBe(second.plan_id);
+  });
+
+  it("returns a different identifier when an executable write changes", async () => {
+    const baseInput = {
+      description: "write a file",
+      files: [{ path: "a.txt", content: "first", purpose: "demo" }],
+    };
+    const first = JSON.parse((await runPlanChanges(null, baseInput))[0].text);
+    const changed = JSON.parse((await runPlanChanges(null, {
+      ...baseInput,
+      files: [{ ...baseInput.files[0], content: "second" }],
+    }))[0].text);
+
+    expect(first.plan_id).not.toBe(changed.plan_id);
   });
 
   it("detects conflicts when an existing file has different content", async () => {
