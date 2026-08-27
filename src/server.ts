@@ -2,7 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { planChangesDefinition, runPlanChanges } from "./tools/plan-changes.js";
+import { planChangesTool } from "./tools/plan-changes.js";
 import { inspectTextTool } from "./tools/inspect-text.js";
 import { ToolRegistry, UnknownToolError } from "./tools/tool.js";
 import { PolicyDeniedError } from "./policy/tool-policy.js";
@@ -10,11 +10,7 @@ import { SERVER_VERSION } from "./version.js";
 
 const registry = new ToolRegistry([
   inspectTextTool,
-  {
-    definition: planChangesDefinition,
-    policy: { access: "plan", requiresApproval: false },
-    run: (input) => runPlanChanges(undefined, input),
-  },
+  planChangesTool,
 ]);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });

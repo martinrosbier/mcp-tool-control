@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildAnnouncement } from "../lib/announcement.js";
 import { detectConflicts, type FileToWrite } from "../lib/conflicts.js";
 import { SERVER_VERSION } from "../version.js";
+import type { RegisteredTool } from "./tool.js";
 
 /**
  * Input schema for the `plan-changes` tool.
@@ -133,3 +134,9 @@ export async function runPlanChanges(
 
   return [{ type: "text", text: JSON.stringify(response, null, 2) }];
 }
+
+export const planChangesTool: RegisteredTool = {
+  definition: planChangesDefinition,
+  policy: { access: "plan", requiresApproval: false },
+  run: (input) => runPlanChanges(undefined, input),
+};
