@@ -7,6 +7,7 @@ export type ApprovalStatus = "approved" | "denied";
 
 export interface ApprovalDecision {
   readonly planId: string;
+  readonly plan: PendingChangePlan;
   readonly status: ApprovalStatus;
   readonly decidedAt: string;
 }
@@ -62,16 +63,21 @@ export function createTrustedApprovalBoundary(
   }
 
   function decide(planId: string, status: ApprovalStatus): ApprovalDecision {
-    if (!activePlan(planId)) throw new PendingPlanUnavailableError(planId);
+    const plan = activePlan(planId);
+    if (!plan) throw new PendingPlanUnavailableError(planId);
 
     const existing = decisions.get(planId);
     if (existing) {
-      if (existing.status === status) return existing;
-      throw new ApprovalAlreadyDecidedError(planId);
+      if (existing.plan === plan) {
+        if (existing.status === status) return existing;
+        throw new ApprovalAlreadyDecidedError(planId);
+      }
+      decisions.delete(planId);
     }
 
     const decision = Object.freeze({
       planId,
+      plan,
       status,
       decidedAt: new Date(now()).toISOString(),
     });
@@ -81,8 +87,15 @@ export function createTrustedApprovalBoundary(
 
   const state: ApprovalState = Object.freeze({
     get(planId: string): ApprovalDecision | undefined {
-      if (!activePlan(planId)) return undefined;
-      return decisions.get(planId);
+      const plan = activePlan(planId);
+      if (!plan) return undefined;
+
+      const decision = decisions.get(planId);
+      if (decision?.plan !== plan) {
+        decisions.delete(planId);
+        return undefined;
+      }
+      return decision;
     },
   });
 

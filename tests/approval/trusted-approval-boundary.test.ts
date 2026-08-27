@@ -23,6 +23,7 @@ describe("createTrustedApprovalBoundary", () => {
 
     expect(decision).toEqual({
       planId: plan.id,
+      plan,
       status: "approved",
       decidedAt: "1970-01-01T00:00:02.000Z",
     });
@@ -73,5 +74,24 @@ describe("createTrustedApprovalBoundary", () => {
     expect(() => boundary.host.approve(plan.id)).toThrow(
       PendingPlanUnavailableError,
     );
+  });
+
+  it("does not transfer approval to a recreated plan with the same identifier", () => {
+    let now = 1_000;
+    const plans = new PendingChangePlanStore({ ttlMs: 500, now: () => now });
+    const originalPlan = plans.store(files);
+    const boundary = createTrustedApprovalBoundary(plans, { now: () => now });
+    const originalDecision = boundary.host.approve(originalPlan.id);
+
+    now = 1_500;
+    const recreatedPlan = plans.store(files);
+
+    expect(recreatedPlan.id).toBe(originalPlan.id);
+    expect(recreatedPlan).not.toBe(originalPlan);
+    expect(boundary.state.get(recreatedPlan.id)).toBeUndefined();
+
+    const recreatedDecision = boundary.host.approve(recreatedPlan.id);
+    expect(recreatedDecision).not.toBe(originalDecision);
+    expect(recreatedDecision.plan).toBe(recreatedPlan);
   });
 });
