@@ -5,13 +5,8 @@ export interface ToolPolicy {
   requiresApproval: boolean;
 }
 
-export interface ToolApproval {
-  toolName: string;
-  planId: string;
-}
-
 export interface ToolExecutionContext {
-  approval?: ToolApproval;
+  approvalGranted?: boolean;
 }
 
 export class PolicyDeniedError extends Error {
@@ -21,36 +16,17 @@ export class PolicyDeniedError extends Error {
   }
 }
 
-export function validateToolPolicy(
-  policy: ToolPolicy,
-  hasApprovalBinding: boolean,
-): void {
+export function validateToolPolicy(policy: ToolPolicy): void {
   if (policy.access === "write" && !policy.requiresApproval) {
     throw new Error("Write tools must require approval");
-  }
-  if (policy.requiresApproval && !hasApprovalBinding) {
-    throw new Error("Approval-gated tools must bind execution to a plan identifier");
   }
 }
 
 export function enforceToolPolicy(
   policy: ToolPolicy,
   context: ToolExecutionContext,
-  toolName: string,
-  planId?: string,
 ): void {
-  if (!policy.requiresApproval) return;
-
-  if (!planId) {
-    throw new PolicyDeniedError("Tool execution requires a plan identifier");
-  }
-
-  const approval = context.approval;
-  if (
-    !approval
-    || approval.toolName !== toolName
-    || approval.planId !== planId
-  ) {
-    throw new PolicyDeniedError("Tool execution requires approval for this plan");
+  if (policy.requiresApproval && !context.approvalGranted) {
+    throw new PolicyDeniedError("Tool execution requires approval");
   }
 }
