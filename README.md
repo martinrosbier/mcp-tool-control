@@ -24,9 +24,19 @@ npm start
 
 The server uses MCP over stdio. Configure an MCP-compatible host to launch `node` with the absolute path to `dist/server.js`.
 
+## Embedding in a trusted host
+
+Applications that need controlled writes should use `createMcpToolControl()` to
+receive the model-facing MCP server and the trusted approval controller as separate
+capabilities. See [Trusted host integration](docs/trusted-host-integration.md) for
+the complete example and security requirements.
+
 ## Security scope
 
-The included tools do not execute commands, call external APIs, or write files. `plan-changes` produces data for review; it does not constitute an approval boundary by itself.
+The included tools do not execute commands or call external APIs. `inspect-text` is
+read-only, `plan-changes` captures and stores a proposed write set, and
+`apply-changes` writes only an unexpired plan approved through the trusted host
+controller.
 
 The server currently includes foundational controls for:
 
@@ -35,6 +45,9 @@ The server currently includes foundational controls for:
 - Denying approval-gated execution when approval is absent.
 - Resolving relative filesystem paths beneath an allowed root, including protection against parent traversal and symlink or junction escapes.
 
-These controls are not yet connected into an end-to-end write workflow. In particular, the server does not currently expose a write tool, bind approval to a specific proposed change, configure caller authorization, or emit audit records from the tool execution boundary.
+These controls are connected into an end-to-end write workflow with immutable
+pending plans, exact approval binding, stale-state detection, single-use approval,
+contained writes, and structural audit events. Authentication of the approving
+human or system remains the embedding host's responsibility.
 
 Do not expose this server remotely without adding authentication, authorization, rate limits, and transport-specific protections.
