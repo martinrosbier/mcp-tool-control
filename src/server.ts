@@ -17,7 +17,7 @@ const allowedRoot = process.cwd();
 const registry = new ToolRegistry([
   inspectTextTool,
   createPlanChangesTool(planStore, allowedRoot),
-  createApplyChangesTool(planStore, approvalBoundary.state, allowedRoot),
+  createApplyChangesTool(planStore, approvalBoundary.execution, allowedRoot),
 ]);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });

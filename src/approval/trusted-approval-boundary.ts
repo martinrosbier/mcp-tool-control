@@ -3,17 +3,22 @@ import type {
   PendingChangePlanStore,
 } from "../plans/pending-change-plan-store.js";
 
-export type ApprovalStatus = "approved" | "denied";
+export type ApprovalStatus = "approved" | "denied" | "consumed";
 
 export interface ApprovalDecision {
   readonly planId: string;
   readonly plan: PendingChangePlan;
   readonly status: ApprovalStatus;
   readonly decidedAt: string;
+  readonly consumedAt?: string;
 }
 
 export interface ApprovalState {
   get(planId: string): ApprovalDecision | undefined;
+}
+
+export interface ApprovalExecution extends ApprovalState {
+  consume(plan: PendingChangePlan): ApprovalDecision;
 }
 
 export interface TrustedApprovalController {
@@ -23,6 +28,7 @@ export interface TrustedApprovalController {
 
 export interface TrustedApprovalBoundary {
   readonly state: ApprovalState;
+  readonly execution: ApprovalExecution;
   readonly host: TrustedApprovalController;
 }
 
@@ -41,6 +47,13 @@ export class ApprovalAlreadyDecidedError extends Error {
   constructor(planId: string) {
     super(`Approval is already decided for plan: ${planId}`);
     this.name = "ApprovalAlreadyDecidedError";
+  }
+}
+
+export class ApprovalNotExecutableError extends Error {
+  constructor(planId: string) {
+    super(`Plan does not have executable approval: ${planId}`);
+    this.name = "ApprovalNotExecutableError";
   }
 }
 
@@ -99,10 +112,33 @@ export function createTrustedApprovalBoundary(
     },
   });
 
+  const execution: ApprovalExecution = Object.freeze({
+    get: state.get,
+    consume(plan: PendingChangePlan): ApprovalDecision {
+      const active = activePlan(plan.id);
+      const decision = decisions.get(plan.id);
+      if (
+        active !== plan
+        || decision?.plan !== plan
+        || decision.status !== "approved"
+      ) {
+        throw new ApprovalNotExecutableError(plan.id);
+      }
+
+      const consumed = Object.freeze({
+        ...decision,
+        status: "consumed" as const,
+        consumedAt: new Date(now()).toISOString(),
+      });
+      decisions.set(plan.id, consumed);
+      return consumed;
+    },
+  });
+
   const host: TrustedApprovalController = Object.freeze({
     approve: (planId: string) => decide(planId, "approved"),
     deny: (planId: string) => decide(planId, "denied"),
   });
 
-  return Object.freeze({ state, host });
+  return Object.freeze({ state, execution, host });
 }

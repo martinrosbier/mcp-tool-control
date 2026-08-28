@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -26,7 +26,7 @@ function setup() {
   ]);
   const boundary = createTrustedApprovalBoundary(plans);
   const registry = new ToolRegistry([
-    createApplyChangesTool(plans, boundary.state, allowedRoot),
+    createApplyChangesTool(plans, boundary.execution, allowedRoot),
   ]);
   return { plan, boundary, registry };
 }
@@ -74,7 +74,7 @@ describe("apply-changes tool", () => {
       .rejects.toBeInstanceOf(PolicyDeniedError);
   });
 
-  it("accepts an exactly approved pending plan without writing yet", async () => {
+  it("applies an exactly approved pending plan", async () => {
     const { plan, boundary, registry } = setup();
     boundary.host.approve(plan.id);
 
@@ -83,9 +83,22 @@ describe("apply-changes tool", () => {
 
     expect(response).toEqual({
       plan_id: plan.id,
-      status: "validated",
+      status: "applied",
       file_count: 1,
-      message: "Approved plan passed filesystem state validation.",
+      applied_paths: [path.join("notes", "example.txt")],
+      message: "Approved plan was applied and its approval was consumed.",
     });
+    await expect(readFile(path.join(allowedRoot, "notes", "example.txt"), "utf8"))
+      .resolves.toBe("hello");
+    expect(boundary.state.get(plan.id)?.status).toBe("consumed");
+  });
+
+  it("does not allow an applied plan to be replayed", async () => {
+    const { plan, boundary, registry } = setup();
+    boundary.host.approve(plan.id);
+    await registry.execute("apply-changes", { plan_id: plan.id });
+
+    await expect(registry.execute("apply-changes", { plan_id: plan.id }))
+      .rejects.toBeInstanceOf(PolicyDeniedError);
   });
 });

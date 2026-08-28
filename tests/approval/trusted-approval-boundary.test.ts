@@ -61,6 +61,25 @@ describe("createTrustedApprovalBoundary", () => {
     );
   });
 
+  it("consumes approval exactly once through the execution capability", () => {
+    const plans = new PendingChangePlanStore();
+    const plan = plans.store(files);
+    const boundary = createTrustedApprovalBoundary(plans, { now: () => 2_000 });
+    boundary.host.approve(plan.id);
+
+    const consumed = boundary.execution.consume(plan);
+
+    expect(consumed.status).toBe("consumed");
+    expect(consumed.consumedAt).toBe("1970-01-01T00:00:02.000Z");
+    expect(boundary.state.get(plan.id)).toBe(consumed);
+    expect(() => boundary.execution.consume(plan)).toThrow(
+      "Plan does not have executable approval",
+    );
+    expect(() => boundary.host.approve(plan.id)).toThrow(
+      ApprovalAlreadyDecidedError,
+    );
+  });
+
   it("invalidates approval state when the pending plan expires", () => {
     let now = 1_000;
     const plans = new PendingChangePlanStore({ ttlMs: 500, now: () => now });

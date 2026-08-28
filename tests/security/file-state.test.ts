@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
 import {
+  NestedPlanTargetError,
   StaleChangePlanError,
   assertPlanFileStatesUnchanged,
   captureFileStates,
@@ -63,5 +64,12 @@ describe("file state validation", () => {
 
     await expect(assertPlanFileStatesUnchanged(allowedRoot, plan))
       .rejects.toBeInstanceOf(StaleChangePlanError);
+  });
+
+  it("rejects targets nested beneath another planned target", async () => {
+    await expect(captureFileStates(allowedRoot, [
+      { path: "target", content: "file", purpose: "first" },
+      { path: "target/nested.txt", content: "nested", purpose: "second" },
+    ])).rejects.toBeInstanceOf(NestedPlanTargetError);
   });
 });

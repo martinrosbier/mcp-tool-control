@@ -22,6 +22,13 @@ export class DuplicatePlanTargetError extends Error {
   }
 }
 
+export class NestedPlanTargetError extends Error {
+  constructor(targetPath: string) {
+    super(`Plan target overlaps another target: ${targetPath}`);
+    this.name = "NestedPlanTargetError";
+  }
+}
+
 export class StaleChangePlanError extends Error {
   constructor(targetPath: string) {
     super(`File state changed after planning: ${targetPath}`);
@@ -76,6 +83,16 @@ export async function captureFileStates(
 
     normalizedFiles.push({ ...file, path: relativePath });
     expectedFiles.push(await readExpectedState(absolutePath, relativePath));
+  }
+
+  for (const candidate of normalizedFiles) {
+    for (const other of normalizedFiles) {
+      if (candidate === other) continue;
+      const relative = path.relative(candidate.path, other.path);
+      if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+        throw new NestedPlanTargetError(other.path);
+      }
+    }
   }
 
   return { files: normalizedFiles, expectedFiles };

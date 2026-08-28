@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { ApprovalState } from "../approval/trusted-approval-boundary.js";
+import type { ApprovalExecution } from "../approval/trusted-approval-boundary.js";
 import { PolicyDeniedError } from "../policy/tool-policy.js";
 import type { PendingChangePlanStore } from "../plans/pending-change-plan-store.js";
-import { assertPlanFileStatesUnchanged } from "../security/file-state.js";
+import { applyFileChangesSafely } from "../security/apply-file-changes.js";
 import type { RegisteredTool } from "./tool.js";
 
 export const ApplyChangesInputSchema = z.object({
@@ -11,7 +11,7 @@ export const ApplyChangesInputSchema = z.object({
 
 export function createApplyChangesTool(
   plans: PendingChangePlanStore,
-  approvals: ApprovalState,
+  approvals: ApprovalExecution,
   allowedRoot: string = process.cwd(),
 ): RegisteredTool {
   function requireApprovedPlan(rawInput: unknown) {
@@ -58,14 +58,19 @@ export function createApplyChangesTool(
     },
     async run(rawInput) {
       const plan = requireApprovedPlan(rawInput);
-      await assertPlanFileStatesUnchanged(allowedRoot, plan);
+      const appliedPaths = await applyFileChangesSafely(
+        allowedRoot,
+        plan,
+        () => { approvals.consume(plan); },
+      );
       return [{
         type: "text",
         text: JSON.stringify({
           plan_id: plan.id,
-          status: "validated",
+          status: "applied",
           file_count: plan.files.length,
-          message: "Approved plan passed filesystem state validation.",
+          applied_paths: appliedPaths,
+          message: "Approved plan was applied and its approval was consumed.",
         }),
       }];
     },
