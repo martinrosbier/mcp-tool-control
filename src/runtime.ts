@@ -3,23 +3,23 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
 import {
   createTrustedApprovalBoundary,
   type TrustedApprovalController,
 } from "./approval/trusted-approval-boundary.js";
-import { PolicyDeniedError } from "./policy/tool-policy.js";
+import { toSafeToolError } from "./errors/safe-tool-error.js";
 import { PendingChangePlanStore } from "./plans/pending-change-plan-store.js";
 import { createApplyChangesTool } from "./tools/apply-changes.js";
 import { inspectTextTool } from "./tools/inspect-text.js";
 import { createPlanChangesTool } from "./tools/plan-changes.js";
-import { ToolRegistry, UnknownToolError } from "./tools/tool.js";
+import { ToolRegistry } from "./tools/tool.js";
 import type { AuditSink } from "./utils/audit.js";
 import { SERVER_VERSION } from "./version.js";
 
 export interface McpToolControlOptions {
   allowedRoot: string;
   audit?: AuditSink;
+  onInternalError?: (error: unknown) => void;
 }
 
 export interface McpToolControlRuntime {
@@ -60,15 +60,12 @@ export function createMcpToolControl(
         ),
       };
     } catch (error) {
-      const message = error instanceof z.ZodError
-        ? "Invalid tool arguments"
-        : error instanceof UnknownToolError
-          ? "Unknown tool"
-          : error instanceof PolicyDeniedError
-            ? "Tool execution denied by policy"
-            : "Tool execution failed";
-      console.error(error);
-      return { content: [{ type: "text" as const, text: message }], isError: true };
+      options.onInternalError?.(error);
+      const safeError = toSafeToolError(error);
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(safeError) }],
+        isError: true,
+      };
     }
   });
 
