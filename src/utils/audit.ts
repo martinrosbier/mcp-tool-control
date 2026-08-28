@@ -1,89 +1,68 @@
-/**
- * Minimal structured event helpers for tool execution records.
- */
+import { randomUUID } from "node:crypto";
+
+export type AuditOutcome = "success" | "denied" | "error";
+export type AuditEventType = "tool_execution" | "approval_decision";
 
 export interface AuditLogEntry {
   timestamp: string;
   requestId: string;
-  toolName: string;
-  callerId?: string;
-  inputSummary: string;
-  outputSummary: string;
-  provider: string;
-  model: string;
-  durationMs: number;
-  suspiciousInputDetected: boolean;
-  outputValidated: boolean;
+  eventType: AuditEventType;
+  outcome: AuditOutcome;
+  toolName?: string;
+  access?: string;
+  planId?: string;
+  decision?: string;
+  inputSummary?: string;
+  outputSummary?: string;
+  durationMs?: number;
+  errorName?: string;
 }
 
-/**
- * Emits one serialized execution record.
- * 
- * @param record - Execution data to serialize
- */
-export function logAuditEvent(entry: AuditLogEntry): void {
+export type AuditSink = (entry: AuditLogEntry) => void;
+
+export const logAuditEvent: AuditSink = (entry) => {
   const logLine = JSON.stringify({
     ...entry,
     level: "audit",
     service: "mcp-tool-control",
   });
 
-  console.log(`[AUDIT] ${logLine}`);
+  // MCP stdio reserves stdout for protocol messages.
+  console.error(`[AUDIT] ${logLine}`);
+};
 
-  // Applications can replace this console sink with durable storage.
-}
-
-/**
- * Creates an operation identifier suitable for log correlation.
- * 
- * @returns A locally generated correlation identifier
- */
 export function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  return `req_${randomUUID()}`;
 }
 
-/**
- * Produces a bounded structural description without recording object values.
- * 
- * @param input - Value crossing the tool boundary
- * @returns Bounded text or object dimensions
- */
+/** Returns dimensions only; input values never enter the audit record. */
 export function summarizeInputForLog(input: unknown): string {
   if (typeof input === "string") {
-    return input.length > 200 ? `${input.substring(0, 200)}...` : input;
+    return JSON.stringify({ type: "string", characterCount: input.length });
   }
 
   if (typeof input === "object" && input !== null) {
     const values = Object.values(input as Record<string, unknown>);
-    const dimensions = {
+    return JSON.stringify({
+      type: "object",
       fieldCount: values.length,
       stringFieldCount: values.filter((value) => typeof value === "string").length,
       arrayItemCount: values.reduce<number>(
         (total, value) => total + (Array.isArray(value) ? value.length : 0),
         0,
       ),
-    };
-
-    return JSON.stringify(dimensions);
+    });
   }
 
-  return String(input).substring(0, 200);
+  return JSON.stringify({ type: input === null ? "null" : typeof input });
 }
 
-/**
- * Redacts common credential assignments and caps the recorded output length.
- * 
- * @param output - Text produced by a tool or downstream service
- * @returns Filtered, bounded text
- */
-export function summarizeOutputForLog(output: string): string {
-  if (!output) return "";
-
-  const filteredOutput = output
-    .replace(/sk-[a-zA-Z0-9-]{40,}/g, "[KEY_REDACTED]")
-    .replace(/api[_-]?key\s*[:=]\s*["'][^"']+["']/gi, "apikey=[REDACTED]");
-
-  return filteredOutput.length > 500
-    ? `${filteredOutput.substring(0, 500)}...`
-    : filteredOutput;
+/** Returns output dimensions only; tool response text never enters the audit record. */
+export function summarizeOutputForLog(
+  output: readonly { type: "text"; text: string }[],
+): string {
+  return JSON.stringify({
+    contentItemCount: output.length,
+    textCharacterCount: output.reduce((total, item) => total + item.text.length, 0),
+  });
 }

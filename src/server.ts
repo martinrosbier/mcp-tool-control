@@ -10,15 +10,16 @@ import { SERVER_VERSION } from "./version.js";
 import { PendingChangePlanStore } from "./plans/pending-change-plan-store.js";
 import { createTrustedApprovalBoundary } from "./approval/trusted-approval-boundary.js";
 import { createApplyChangesTool } from "./tools/apply-changes.js";
+import { logAuditEvent } from "./utils/audit.js";
 
 const planStore = new PendingChangePlanStore();
-const approvalBoundary = createTrustedApprovalBoundary(planStore);
+const approvalBoundary = createTrustedApprovalBoundary(planStore, { audit: logAuditEvent });
 const allowedRoot = process.cwd();
 const registry = new ToolRegistry([
   inspectTextTool,
   createPlanChangesTool(planStore, allowedRoot),
   createApplyChangesTool(planStore, approvalBoundary.execution, allowedRoot),
-]);
+], logAuditEvent);
 
 const server = new Server({ name: "mcp-tool-control", version: SERVER_VERSION }, { capabilities: { tools: {} } });
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: registry.list() }));

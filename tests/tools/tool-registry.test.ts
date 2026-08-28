@@ -24,6 +24,23 @@ describe("ToolRegistry", () => {
     expect(tool.run).toHaveBeenCalledWith({ value: 1 });
   });
 
+  it("audits successful execution without input or output values", async () => {
+    const audit = vi.fn();
+    const registry = new ToolRegistry([makeTool("sample")], audit);
+
+    await registry.execute("sample", { secret: "do-not-log" });
+
+    expect(audit).toHaveBeenCalledOnce();
+    expect(audit.mock.calls[0][0]).toMatchObject({
+      eventType: "tool_execution",
+      outcome: "success",
+      toolName: "sample",
+      access: "read",
+    });
+    expect(JSON.stringify(audit.mock.calls[0][0])).not.toContain("do-not-log");
+    expect(JSON.stringify(audit.mock.calls[0][0])).not.toContain("sample result");
+  });
+
   it("rejects unknown tools", async () => {
     const registry = new ToolRegistry([]);
     await expect(registry.execute("missing", {})).rejects.toBeInstanceOf(UnknownToolError);
@@ -45,12 +62,18 @@ describe("ToolRegistry", () => {
     tool.authorize = vi.fn(() => {
       throw new Error("Tool execution requires approval");
     });
-    const registry = new ToolRegistry([tool]);
+    const audit = vi.fn();
+    const registry = new ToolRegistry([tool], audit);
 
     await expect(registry.execute("write-file", {})).rejects.toThrow(
       "Tool execution requires approval",
     );
     expect(tool.run).not.toHaveBeenCalled();
+    expect(audit).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: "tool_execution",
+      outcome: "error",
+      errorName: "Error",
+    }));
   });
 
   it("rejects approval-gated tools without a trusted authorizer", () => {

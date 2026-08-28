@@ -2,6 +2,7 @@ import type {
   PendingChangePlan,
   PendingChangePlanStore,
 } from "../plans/pending-change-plan-store.js";
+import { generateRequestId, type AuditSink } from "../utils/audit.js";
 
 export type ApprovalStatus = "approved" | "denied" | "consumed";
 
@@ -34,6 +35,7 @@ export interface TrustedApprovalBoundary {
 
 export interface TrustedApprovalBoundaryOptions {
   now?: () => number;
+  audit?: AuditSink;
 }
 
 export class PendingPlanUnavailableError extends Error {
@@ -68,6 +70,24 @@ export function createTrustedApprovalBoundary(
 ): TrustedApprovalBoundary {
   const decisions = new Map<string, ApprovalDecision>();
   const now = options.now ?? Date.now;
+  const audit = options.audit;
+
+  function auditDecision(
+    planId: string,
+    decision: string,
+    outcome: "success" | "denied",
+    error?: unknown,
+  ): void {
+    audit?.({
+      timestamp: new Date(now()).toISOString(),
+      requestId: generateRequestId(),
+      eventType: "approval_decision",
+      outcome,
+      planId,
+      decision,
+      errorName: error instanceof Error ? error.name : undefined,
+    });
+  }
 
   function activePlan(planId: string): PendingChangePlan | undefined {
     const plan = plans.get(planId);
@@ -76,26 +96,32 @@ export function createTrustedApprovalBoundary(
   }
 
   function decide(planId: string, status: ApprovalStatus): ApprovalDecision {
-    const plan = activePlan(planId);
-    if (!plan) throw new PendingPlanUnavailableError(planId);
+    try {
+      const plan = activePlan(planId);
+      if (!plan) throw new PendingPlanUnavailableError(planId);
 
-    const existing = decisions.get(planId);
-    if (existing) {
-      if (existing.plan === plan) {
-        if (existing.status === status) return existing;
-        throw new ApprovalAlreadyDecidedError(planId);
+      const existing = decisions.get(planId);
+      if (existing) {
+        if (existing.plan === plan) {
+          if (existing.status === status) return existing;
+          throw new ApprovalAlreadyDecidedError(planId);
+        }
+        decisions.delete(planId);
       }
-      decisions.delete(planId);
-    }
 
-    const decision = Object.freeze({
-      planId,
-      plan,
-      status,
-      decidedAt: new Date(now()).toISOString(),
-    });
-    decisions.set(planId, decision);
-    return decision;
+      const decision = Object.freeze({
+        planId,
+        plan,
+        status,
+        decidedAt: new Date(now()).toISOString(),
+      });
+      decisions.set(planId, decision);
+      auditDecision(planId, status, "success");
+      return decision;
+    } catch (error) {
+      auditDecision(planId, status, "denied", error);
+      throw error;
+    }
   }
 
   const state: ApprovalState = Object.freeze({
@@ -115,23 +141,29 @@ export function createTrustedApprovalBoundary(
   const execution: ApprovalExecution = Object.freeze({
     get: state.get,
     consume(plan: PendingChangePlan): ApprovalDecision {
-      const active = activePlan(plan.id);
-      const decision = decisions.get(plan.id);
-      if (
-        active !== plan
-        || decision?.plan !== plan
-        || decision.status !== "approved"
-      ) {
-        throw new ApprovalNotExecutableError(plan.id);
-      }
+      try {
+        const active = activePlan(plan.id);
+        const decision = decisions.get(plan.id);
+        if (
+          active !== plan
+          || decision?.plan !== plan
+          || decision.status !== "approved"
+        ) {
+          throw new ApprovalNotExecutableError(plan.id);
+        }
 
-      const consumed = Object.freeze({
-        ...decision,
-        status: "consumed" as const,
-        consumedAt: new Date(now()).toISOString(),
-      });
-      decisions.set(plan.id, consumed);
-      return consumed;
+        const consumed = Object.freeze({
+          ...decision,
+          status: "consumed" as const,
+          consumedAt: new Date(now()).toISOString(),
+        });
+        decisions.set(plan.id, consumed);
+        auditDecision(plan.id, "consume", "success");
+        return consumed;
+      } catch (error) {
+        auditDecision(plan.id, "consume", "denied", error);
+        throw error;
+      }
     },
   });
 

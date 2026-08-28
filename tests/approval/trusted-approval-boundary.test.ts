@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   ApprovalAlreadyDecidedError,
   PendingPlanUnavailableError,
@@ -29,6 +29,45 @@ describe("createTrustedApprovalBoundary", () => {
     });
     expect(boundary.state.get(plan.id)).toBe(decision);
     expect(Object.isFrozen(decision)).toBe(true);
+  });
+
+  it("audits trusted decisions and approval consumption", () => {
+    const plans = new PendingChangePlanStore();
+    const plan = plans.store(files);
+    const audit = vi.fn();
+    const boundary = createTrustedApprovalBoundary(plans, { audit });
+
+    boundary.host.approve(plan.id);
+    boundary.execution.consume(plan);
+
+    expect(audit).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      eventType: "approval_decision",
+      outcome: "success",
+      planId: plan.id,
+      decision: "approved",
+    }));
+    expect(audit).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      eventType: "approval_decision",
+      outcome: "success",
+      planId: plan.id,
+      decision: "consume",
+    }));
+  });
+
+  it("audits rejected approval attempts", () => {
+    const plans = new PendingChangePlanStore();
+    const audit = vi.fn();
+    const boundary = createTrustedApprovalBoundary(plans, { audit });
+
+    expect(() => boundary.host.approve("plan_missing")).toThrow();
+
+    expect(audit).toHaveBeenCalledWith(expect.objectContaining({
+      eventType: "approval_decision",
+      outcome: "denied",
+      planId: "plan_missing",
+      decision: "approved",
+      errorName: "PendingPlanUnavailableError",
+    }));
   });
 
   it("rejects decisions for unknown plans", () => {
