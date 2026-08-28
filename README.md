@@ -31,6 +31,9 @@ receive the model-facing MCP server and the trusted approval controller as separ
 capabilities. See [Trusted host integration](docs/trusted-host-integration.md) for
 the complete example and security requirements.
 
+See [Controlled write workflow](docs/controlled-write-workflow.md) for the complete
+plan lifecycle, trust model, write semantics, and explicit limitations.
+
 ## Security scope
 
 The included tools do not execute commands or call external APIs. `inspect-text` is
