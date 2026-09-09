@@ -104,6 +104,27 @@ describe("replacement-time filesystem changes", () => {
     await expect(readdir(allowedRoot)).resolves.toEqual(["first.txt", "second.txt"]);
   });
 
+  it("keeps partial writes and consumes approval when a replacement fails", async () => {
+    const first = path.join(allowedRoot, "first.txt");
+    const second = path.join(allowedRoot, "second.txt");
+    await writeFile(first, "original first");
+    await writeFile(second, "original second");
+    const write = await approvedWrite(["first.txt", "second.txt"]);
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename)
+      .mockImplementationOnce(actual.rename)
+      .mockImplementationOnce(async () => {
+        throw new Error("simulated replacement failure");
+      });
+
+    await expect(write.run()).rejects.toThrow("simulated replacement failure");
+    await expect(readFile(first, "utf8")).resolves.toBe("replacement");
+    await expect(readFile(second, "utf8")).resolves.toBe("original second");
+    expect(write.status()).toBe("consumed");
+    await expect(readdir(allowedRoot)).resolves.toEqual(["first.txt", "second.txt"]);
+    await expect(write.run()).rejects.toBeInstanceOf(PolicyDeniedError);
+  });
+
   it("rejects a missing target created between replacements", async () => {
     const second = path.join(allowedRoot, "second.txt");
     const write = await approvedWrite(["first.txt", "second.txt"]);
