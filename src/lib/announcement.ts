@@ -9,7 +9,7 @@ export interface AnnouncementArgs {
 
 /**
  * Build a human-readable markdown announcement describing what files
- * will be written and why. Follows transparency rule from server-context.md.
+ * will be written and why, with a reference to bounded conflict previews.
  */
 export function buildAnnouncement(args: AnnouncementArgs): string {
   const { files, conflicts, suggestedCommit } = args;
@@ -21,7 +21,7 @@ export function buildAnnouncement(args: AnnouncementArgs): string {
   }
 
   if (conflicts.length > 0) {
-    announcement += `\n⚠️  ${conflicts.length} file(s) already exist with different content — showing diff in \`conflicts\`:\n`;
+    announcement += `\n⚠️  ${conflicts.length} file(s) have different supplied existing content — see bounded previews in \`conflicts\`:\n`;
     for (const conflict of conflicts) {
       announcement += `- \`${conflict.path}\`\n`;
     }

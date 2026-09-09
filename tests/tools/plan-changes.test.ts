@@ -128,6 +128,32 @@ describe("plan-changes tool", () => {
     expect(response.conflicts).toHaveLength(0);
   });
 
+  it("returns focused previews without changing executable plan identity", async () => {
+    const input = {
+      description: "review a setting change",
+      files: [{ path: "preview-example.txt", content: "header\nmode=write", purpose: "test" }],
+    };
+    const first = JSON.parse((await runPlanChanges(planStore, {
+      ...input,
+      existing_files: [{ path: "preview-example.txt", content: "header\nmode=read" }],
+    }))[0].text);
+    const second = JSON.parse((await runPlanChanges(planStore, {
+      ...input,
+      existing_files: [{ path: "preview-example.txt", content: "different supplied metadata" }],
+    }))[0].text);
+
+    expect(first.conflicts[0]).toMatchObject({
+      first_difference: { line: 2, column: 6 },
+      existing_excerpt: '..."mode=read"',
+      proposed_excerpt: '..."mode=write"',
+      preview_truncated: true,
+    });
+    expect(first.announcement).toContain("bounded previews");
+    expect(second.plan_id).toBe(first.plan_id);
+    expect(second.files_to_write).toEqual(first.files_to_write);
+    expect(planStore.get(first.plan_id)?.files).toEqual(first.files_to_write);
+  });
+
   it("does not touch the filesystem", async () => {
     const writeSpy = vi.spyOn(fs, "writeFile");
     const mkdirSpy = vi.spyOn(fs, "mkdir");

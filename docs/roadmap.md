@@ -144,8 +144,8 @@ races; they do not eliminate every check/use window.
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: in progress.** Steps 1–4 are implemented. Step 7 requires a review of
-remaining adversarial coverage. Steps 5, 6, 8, and 9 require review before deciding
+**Status: in progress.** Steps 1–5 are implemented. Step 7 requires a review of
+remaining adversarial coverage. Steps 6, 8, and 9 require review before deciding
 whether a change is necessary.
 
 1. **Revalidate targets immediately before replacement.**
@@ -174,10 +174,13 @@ whether a change is necessary.
      path segments, safe MCP errors, and unchanged write destinations.
    - The conservative lexical policy does not detect filesystem capabilities or
      model every filesystem-specific Unicode equivalence.
+   - Commits: `1308d24`.
 5. **Assess conflict previews.**
-   - Current previews show only the first line, truncated after 200 characters
-     with an ellipsis when needed.
-   - Improve them only if that materially improves approval decisions.
+   - Review confirmed that shared headers and long lines could hide meaningful changes.
+   - Implemented: bounded before/after excerpts around the first difference, its
+     line and column, and an omission flag. Whitespace changes and empty files are explicit.
+   - Tests cover multiline edits, long lines, output bounds, insertion/deletion,
+     empty files, line endings, and preservation of executable plan identity.
 6. **Remove unused security utilities where justified.**
    - Confirm prompt/filtering helpers have no runtime or intended public API role.
    - Remove obsolete helpers and their dedicated tests together where justified.
@@ -322,11 +325,11 @@ availability and execution across multiple servers.
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
 - Phase 7 is in progress: replacement checks, storage limits, audit failure
-  isolation, and target collision policy are implemented. Conflict preview review
-  is next; a code change is conditional on a concrete review-quality gap.
+  isolation, target collision policy, and conflict previews are implemented.
+  Review of unused security utilities is next.
 - Phase 8 completes verification and release.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 162 tests across 20 files, typechecking,
+- Local validation on September 8, 2026: 173 tests across 21 files, typechecking,
   and build passed. Remote CI and clean-checkout validation were not verified.
 
 ## First Release Criteria

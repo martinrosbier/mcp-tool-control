@@ -141,6 +141,10 @@ approval because decisions bind to the exact server-owned plan instance.
 See [Controlled write workflow](docs/controlled-write-workflow.md) for identity,
 expiry, stale-state handling, consumption, write semantics, and limitations.
 
+Conflict previews show the first difference with bounded before/after text, line
+and column, and an omission flag. They use caller-supplied existing content and
+support review; they do not replace reviewing the full intended writes.
+
 ## Use this repository as a base
 
 Clone or fork the repository and keep tool behavior behind the shared

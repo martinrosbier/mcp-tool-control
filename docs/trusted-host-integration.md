@@ -53,6 +53,12 @@ identifier grants no authority.
 7. The server independently verifies the pending plan and its server-owned decision.
 8. A successful apply consumes approval, preventing replay.
 
+The `conflicts` entries provide bounded before/after previews around the first
+difference, its line and column, and an omission flag. They compare caller-supplied
+`existing_files` with proposed content. The host must not treat them as complete
+diffs or authoritative filesystem snapshots; review the full intended writes and
+obtain trusted existing content when needed.
+
 Approval is bound to the exact stored plan instance. If a plan expires and an
 equivalent plan is created later with the same deterministic ID, the new instance
 does not inherit the old approval.

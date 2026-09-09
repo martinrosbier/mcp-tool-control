@@ -50,6 +50,23 @@ Planning does not write files. It:
 Caller-supplied `existing_files` support review output only. They are not trusted as
 the security snapshot used during application.
 
+Conflict previews focus on the first differing character instead of the first
+line. Each conflict includes paired `existing_excerpt` and `proposed_excerpt`
+strings, a one-based `first_difference` line and column, and `preview_truncated`.
+Columns count JavaScript UTF-16 code units; lines advance on LF characters.
+
+Each excerpt includes at most 200 source code units, with up to 40 units of context
+before the difference on the same line. Text is JSON-quoted so whitespace and line
+endings are visible. Ellipses outside the quotes mark omitted content; empty files
+and end-of-file positions have explicit labels. Escaping and markers keep each
+excerpt at or below 1,208 code units. This bounds preview text, not the complete
+planning response, which also includes the proposed writes.
+
+These are focused previews, not complete diffs. Changes elsewhere can be omitted,
+and supplied existing content may differ from the actual file. The trusted host
+must review the full intended writes and obtain any authoritative comparison it
+needs before approving the exact plan.
+
 Target collision checks use one conservative policy on every platform. After path
 normalization, JavaScript `toLowerCase()` supplies comparison keys for both duplicate
 targets and file/child overlaps. For example, `Readme.md` with `readme.md`, or `Docs`
