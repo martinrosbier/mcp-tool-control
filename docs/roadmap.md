@@ -144,9 +144,8 @@ races; they do not eliminate every check/use window.
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: in progress.** Steps 1–5 are implemented. Step 7 requires a review of
-remaining adversarial coverage. Steps 6, 8, and 9 require review before deciding
-whether a change is necessary.
+**Status: in progress.** Steps 1–7 are implemented. Steps 8 and 9 were reviewed
+and require no additional change at this time.
 
 1. **Revalidate targets immediately before replacement.**
    - Implemented: recheck each target's containment and expected state before rename.
@@ -184,17 +183,27 @@ whether a change is necessary.
 6. **Remove unused security utilities where justified.**
    - Confirm prompt/filtering helpers have no runtime or intended public API role.
    - Remove obsolete helpers and their dedicated tests together where justified.
+   - Reviewed and removed the unreferenced prompt and text-security helpers with
+     their dedicated tests.
 7. **Complete adversarial failure coverage.**
    - Verify replay after consumed-approval failures and partial multi-file execution.
    - Cover resource limits, audit failures, and replacement-time races.
    - Evaluate demonstrated properties rather than test count.
+   - Added coverage for replacement failure after an earlier file was applied,
+     temporary-file cleanup, consumed approval, and replay denial.
 8. **Assess error categories for recovery.**
    - Keep the existing safe-error mechanism.
    - Add plan/approval distinctions only where callers need them to recover.
+   - Reviewed the existing categories; no additional distinction is needed because
+     callers already receive actionable stale, capacity, target, and authorization
+     outcomes without exposing plan state.
 9. **Validate the host approval workflow.**
    - Confirm the host can review the exact plan it authorizes.
    - Add a minimal runnable example only if existing documentation and integration
      tests leave a concrete usability gap.
+   - Reviewed the trusted-host guide and end-to-end integration tests; they cover
+     the actual runtime API and approval lifecycle, so no additional example is
+     necessary.
 
 Each necessary change should have one coherent purpose and directly relevant
 tests. Keep typechecking, tests, and build passing. Amend affected documentation
