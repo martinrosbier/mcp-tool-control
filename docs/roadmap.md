@@ -333,13 +333,13 @@ availability and execution across multiple servers.
 
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
-- Phase 7 is in progress: replacement checks, storage limits, audit failure
-  isolation, target collision policy, and conflict previews are implemented.
-  Review of unused security utilities is next.
-- Phase 8 completes verification and release.
+- Phase 7 security and reliability hardening is complete.
+- Phase 8 is in progress: clean-checkout validation and dependency auditing pass;
+   repository metadata, licensing, and release publication decisions remain.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 173 tests across 21 files, typechecking,
-  and build passed. Remote CI and clean-checkout validation were not verified.
+- Local validation on September 8, 2026: 139 tests across 19 files, typechecking,
+  build, clean-checkout installation, and high-severity dependency auditing passed.
+  Remote CI and release metadata decisions remain to be verified.
 
 ## First Release Criteria
 
