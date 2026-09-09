@@ -33,7 +33,7 @@ The controlled-write path includes:
 - Single-use approval consumption and concurrent replay protection.
 - Exclusive temporary-file staging, flushing, and target revalidation immediately
   before each rename replacement.
-- Structured safe errors and privacy-preserving audit events.
+- Structured safe errors and privacy-preserving audit events with best-effort delivery.
 
 ## Requirements
 
@@ -106,6 +106,10 @@ Plan limits are trusted host configuration. Before each insertion, expired plans
 are removed. New plans that exceed either limit return `PLAN_STORE_FULL`; active
 plans are not evicted. The byte budget counts serialized UTF-8 files and expected
 state, not total process memory or transient request allocations.
+
+Audit sinks may return `void` or `Promise<void>`. A thrown error or rejected promise
+does not change tool results or approval state. Delivery is not awaited or retried;
+failures produce a generic stderr diagnostic without event contents or sink errors.
 
 ## Controlled write lifecycle
 

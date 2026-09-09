@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApprovalAlreadyDecidedError,
   ApprovalNotExecutableError,
@@ -6,12 +6,15 @@ import {
   createTrustedApprovalBoundary,
 } from "../../src/approval/trusted-approval-boundary";
 import { PendingChangePlanStore, PlanStoreCapacityError } from "../../src/plans/pending-change-plan-store";
+import type { AuditLogEntry } from "../../src/utils/audit";
 
 const files = [
   { path: "notes/example.txt", content: "hello", purpose: "add a note" },
 ];
 
 describe("createTrustedApprovalBoundary", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("separates trusted mutation from read-only approval state", () => {
     const plans = new PendingChangePlanStore();
     const plan = plans.store(files);
@@ -193,4 +196,42 @@ describe("createTrustedApprovalBoundary", () => {
       expect(boundary.execution.consume(recreated).status).toBe("consumed");
     },
   );
+
+  describe.each(["throw", "reject"])("when the audit sink fails by %s", (mode) => {
+    function setup() {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const audit = vi.fn((_entry: AuditLogEntry) => {
+        if (mode === "reject") return Promise.reject(new Error("audit failure"));
+        throw new Error("audit failure");
+      });
+      const plans = new PendingChangePlanStore();
+      const plan = plans.store(files);
+      return { audit, plan, boundary: createTrustedApprovalBoundary(plans, { audit }) };
+    }
+
+    it("preserves approval and single-use consumption", async () => {
+      const { audit, plan, boundary } = setup();
+      const approved = boundary.host.approve(plan.id);
+      expect(approved.status).toBe("approved");
+      expect(boundary.state.get(plan.id)).toBe(approved);
+      expect(boundary.host.approve(plan.id)).toBe(approved);
+      const consumed = boundary.execution.consume(plan);
+      expect(boundary.state.get(plan.id)).toBe(consumed);
+      expect(consumed.status).toBe("consumed");
+      expect(audit.mock.calls.map(([entry]) => entry.outcome)).toEqual(["success", "success"]);
+      expect(() => boundary.execution.consume(plan)).toThrow(ApprovalNotExecutableError);
+      expect(() => boundary.host.approve(plan.id)).toThrow(ApprovalAlreadyDecidedError);
+      await Promise.resolve();
+    });
+
+    it("preserves denial and rejection of unknown plans", async () => {
+      const { plan, boundary } = setup();
+      const denied = boundary.host.deny(plan.id);
+      expect(denied.status).toBe("denied");
+      expect(boundary.state.get(plan.id)).toBe(denied);
+      expect(() => boundary.execution.consume(plan)).toThrow(ApprovalNotExecutableError);
+      expect(() => boundary.host.approve("plan_missing")).toThrow(PendingPlanUnavailableError);
+      await Promise.resolve();
+    });
+  });
 });

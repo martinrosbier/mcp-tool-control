@@ -144,7 +144,7 @@ races; they do not eliminate every check/use window.
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: in progress.** Steps 1–2 are implemented. Steps 3–4 and 7 address remaining
+**Status: in progress.** Steps 1–3 are implemented. Steps 4 and 7 address remaining
 gaps. Steps 5, 6, 8, and 9 require review before deciding whether a change is necessary.
 
 1. **Revalidate targets immediately before replacement.**
@@ -159,9 +159,12 @@ gaps. Steps 5, 6, 8, and 9 require review before deciding whether a change is ne
    - Approval decisions use weak references keyed by the exact plan instance.
    - Tests cover repeated distinct requests, byte limits, expiry cleanup, active
      approvals, recreated instances, and concurrent MCP planning.
+   - Commits: `e3d93b1`.
 3. **Isolate audit failures from operation results.**
-   - Prevent audit exceptions from changing successful outcomes or masking failures.
-   - Cover policy denial and approval transitions as well as tool execution.
+   - Implemented: best-effort delivery isolates sink throws and promise rejections
+     from tool results and approval transitions.
+   - Tests cover successful writes, policy denials, original tool errors, approval
+     consumption, replay, late rejections, and fallback logging failures.
 4. **Make target case-sensitivity semantics explicit.**
    - Replace Windows-only collision assumptions with a predictable policy.
    - Test the policy independently of the developer machine where possible.
@@ -312,11 +315,11 @@ availability and execution across multiple servers.
 
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
-- Phase 7 is in progress: per-target replacement checks and bounded plan storage
-  are implemented; audit failure isolation is next.
+- Phase 7 is in progress: per-target replacement checks, bounded plan storage,
+  and audit failure isolation are implemented; target case-sensitivity policy is next.
 - Phase 8 completes verification and release.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 132 tests across 18 files, typechecking,
+- Local validation on September 8, 2026: 150 tests across 19 files, typechecking,
   and build passed. Remote CI and clean-checkout validation were not verified.
 
 ## First Release Criteria

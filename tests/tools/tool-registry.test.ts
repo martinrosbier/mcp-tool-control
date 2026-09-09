@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ToolRegistry, UnknownToolError, type RegisteredTool } from "../../src/tools/tool";
+import { PolicyDeniedError } from "../../src/policy/tool-policy";
+import type { AuditLogEntry } from "../../src/utils/audit";
 
 function makeTool(name: string): RegisteredTool {
   return {
@@ -10,6 +12,8 @@ function makeTool(name: string): RegisteredTool {
 }
 
 describe("ToolRegistry", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("lists registered definitions", () => {
     const registry = new ToolRegistry([makeTool("first"), makeTool("second")]);
     expect(registry.list().map((tool) => tool.name)).toEqual(["first", "second"]);
@@ -95,5 +99,54 @@ describe("ToolRegistry", () => {
       { type: "text", text: "write-file result" },
     ]);
     expect(tool.authorize).toHaveBeenCalledWith({});
+  });
+
+  describe.each(["throw", "reject"])("when the audit sink fails by %s", (mode) => {
+    function failingAudit() {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      return vi.fn((_entry: AuditLogEntry) => {
+        if (mode === "reject") return Promise.reject(new Error("audit failure"));
+        throw new Error("audit failure");
+      });
+    }
+
+    it("preserves successful output and does not audit a second failure", async () => {
+      const tool = makeTool("sample");
+      const audit = failingAudit();
+      const registry = new ToolRegistry([tool], audit);
+
+      await expect(registry.execute("sample", {})).resolves.toEqual([
+        { type: "text", text: "sample result" },
+      ]);
+      expect(tool.run).toHaveBeenCalledOnce();
+      expect(audit).toHaveBeenCalledOnce();
+      expect(audit.mock.calls[0][0]).toMatchObject({ outcome: "success" });
+    });
+
+    it("preserves the original policy denial without running the tool", async () => {
+      const denied = new PolicyDeniedError("not approved");
+      const tool = makeTool("write-file");
+      tool.policy = { access: "write", requiresApproval: true };
+      tool.authorize = () => { throw denied; };
+      const audit = failingAudit();
+      const registry = new ToolRegistry([tool], audit);
+
+      await expect(registry.execute("write-file", {})).rejects.toBe(denied);
+      expect(tool.run).not.toHaveBeenCalled();
+      expect(audit).toHaveBeenCalledOnce();
+      expect(audit.mock.calls[0][0]).toMatchObject({ outcome: "denied" });
+    });
+
+    it("preserves the original tool failure", async () => {
+      const failure = new Error("original tool failure");
+      const tool = makeTool("sample");
+      vi.mocked(tool.run).mockRejectedValueOnce(failure);
+      const audit = failingAudit();
+      const registry = new ToolRegistry([tool], audit);
+
+      await expect(registry.execute("sample", {})).rejects.toBe(failure);
+      expect(audit).toHaveBeenCalledOnce();
+      expect(audit.mock.calls[0][0]).toMatchObject({ outcome: "error" });
+    });
   });
 });

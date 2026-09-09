@@ -2,7 +2,7 @@ import type {
   PendingChangePlan,
   PendingChangePlanStore,
 } from "../plans/pending-change-plan-store.js";
-import { generateRequestId, type AuditSink } from "../utils/audit.js";
+import { createBestEffortAuditSink, generateRequestId, type AuditSink } from "../utils/audit.js";
 
 export type ApprovalStatus = "approved" | "denied" | "consumed";
 
@@ -72,7 +72,7 @@ export function createTrustedApprovalBoundary(
   // Object keys also bind approval to the exact stored plan instance.
   const decisions = new WeakMap<PendingChangePlan, ApprovalDecision>();
   const now = options.now ?? Date.now;
-  const audit = options.audit;
+  const audit = createBestEffortAuditSink(options.audit);
 
   function auditDecision(
     planId: string,

@@ -33,7 +33,7 @@ export class ToolRegistry {
 
   constructor(tools: RegisteredTool[], audit?: AuditSink) {
     this.toolsByName = new Map();
-    this.audit = audit;
+    this.audit = createBestEffortAuditSink(audit);
 
     for (const tool of tools) {
       if (this.toolsByName.has(tool.definition.name)) {
@@ -91,6 +91,7 @@ import {
   type ToolPolicy,
 } from "../policy/tool-policy.js";
 import {
+  createBestEffortAuditSink,
   generateRequestId,
   summarizeInputForLog,
   summarizeOutputForLog,

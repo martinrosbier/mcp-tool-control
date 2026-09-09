@@ -18,7 +18,30 @@ export interface AuditLogEntry {
   errorName?: string;
 }
 
-export type AuditSink = (entry: AuditLogEntry) => void;
+export type AuditSink = (entry: AuditLogEntry) => void | Promise<void>;
+
+function reportAuditFailure(): void {
+  try {
+    // Never include sink errors or event payloads in the fallback diagnostic.
+    console.error("[AUDIT] Audit delivery failed");
+  } catch {
+    // A failing fallback must not change the operation result either.
+  }
+}
+
+/** Best-effort delivery: isolate throws and rejections without awaiting the sink. */
+export function createBestEffortAuditSink(
+  sink?: AuditSink,
+): ((entry: AuditLogEntry) => void) | undefined {
+  if (!sink) return undefined;
+  return (entry) => {
+    try {
+      void Promise.resolve(sink(entry)).catch(reportAuditFailure);
+    } catch {
+      reportAuditFailure();
+    }
+  };
+}
 
 export const logAuditEvent: AuditSink = (entry) => {
   const logLine = JSON.stringify({

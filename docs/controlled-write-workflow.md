@@ -199,6 +199,18 @@ Audit events record tool access class, outcome, timing, error class, and approva
 transitions. Inputs and outputs are represented by structural dimensions rather
 than values. The bundled logger writes to stderr so MCP stdio stdout remains valid.
 
+Audit delivery is best-effort. Sinks may return `void` or `Promise<void>`; thrown
+exceptions and promise rejections are isolated from tool results and approval
+transitions. A successful write still returns success, while a policy denial or
+tool failure retains its original error. Approval decisions and consumption remain
+effective even if their audit delivery fails.
+
+Asynchronous delivery is not awaited, queued, retried, or guaranteed before process
+exit. An operation result is not an audit delivery acknowledgment. Failures trigger
+only a generic stderr diagnostic; it excludes event values and raw sink errors.
+Failure of that fallback diagnostic is also isolated. Applications requiring
+durable audit delivery must provide their own delivery mechanism.
+
 ## Explicit limitations
 
 ### Multi-file plans are not transactions

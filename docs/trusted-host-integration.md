@@ -10,7 +10,7 @@ const { server, approvalController } = createMcpToolControl({
   allowedRoot: "C:\\work\\target-project",
   maxPendingPlans: 100,
   maxPendingPlanBytes: 16 * 1024 * 1024,
-  audit: (event) => durableAuditSink.write(event),
+  audit: (event) => auditStore.write(event),
 });
 
 // Connect the server to the transport used by the MCP client or model.
@@ -30,6 +30,12 @@ The returned values are intentionally separate capabilities:
 
 - `server` exposes `inspect-text`, `plan-changes`, and `apply-changes` through MCP.
 - `approvalController` exposes `approve(planId)` and `deny(planId)` to trusted host code.
+
+The optional audit callback may be synchronous or return a promise. Delivery is
+best-effort: sink throws and rejections are reported through a generic stderr
+diagnostic and do not change operation results. The runtime does not wait for
+delivery, retry it, or provide a flush operation. In particular, the synchronous
+approval controller does not wait for an asynchronous audit sink.
 
 The server does not expose the approval controller as an MCP tool, tool argument,
 resource, prompt, or execution context. A model can receive a `plan_id`, but that
