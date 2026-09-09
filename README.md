@@ -29,6 +29,8 @@ The controlled-write path includes:
 - A trusted approval controller that is not exposed through MCP.
 - Approval binding to the exact stored plan instance.
 - Absolute-path, traversal, symlink, junction, duplicate, and overlapping-target checks.
+- Case-insensitive comparison of planned targets on every platform, with original
+  path spelling preserved for writes.
 - Expected-state hashes and stale-write rejection.
 - Single-use approval consumption and concurrent replay protection.
 - Exclusive temporary-file staging, flushing, and target revalidation immediately
@@ -238,6 +240,9 @@ high-severity dependency auditing, and pipeline secret detection.
 - Plans, decisions, and consumed state are in memory and disappear on restart.
 - Path containment and repeated validation are not an OS sandbox against a hostile
   local actor racing filesystem changes.
+- Target collision checks conservatively reject case-only duplicates even on
+  case-sensitive filesystems. They use JavaScript lowercase comparison, not a full
+  model of filesystem-specific Unicode equivalence.
 - The embedding host is responsible for authenticating approvers and protecting
   the approval controller and raw internal-error sink.
 - Remote exposure requires transport authentication, authorization, rate limits,

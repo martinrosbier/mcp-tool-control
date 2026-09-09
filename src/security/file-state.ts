@@ -68,29 +68,27 @@ export async function captureFileStates(
   files: FileToWrite[],
 ): Promise<{ files: FileToWrite[]; expectedFiles: ExpectedFileState[] }> {
   const rootPath = await realpath(allowedRoot);
-  const seen = new Set<string>();
+  const targets = new Map<string, string>();
   const normalizedFiles: FileToWrite[] = [];
   const expectedFiles: ExpectedFileState[] = [];
 
   for (const file of files) {
     const absolutePath = await resolveContainedPath(rootPath, file.path);
     const relativePath = path.relative(rootPath, absolutePath);
-    const comparisonPath = process.platform === "win32"
-      ? relativePath.toLowerCase()
-      : relativePath;
-    if (seen.has(comparisonPath)) throw new DuplicatePlanTargetError(relativePath);
-    seen.add(comparisonPath);
+    // Use a conservative lexical policy on every platform, including filesystems
+    // that allow case-distinct names. Preserve spelling in the stored plan.
+    const comparisonPath = relativePath.toLowerCase();
+    if (targets.has(comparisonPath)) throw new DuplicatePlanTargetError(relativePath);
+    targets.set(comparisonPath, relativePath);
 
     normalizedFiles.push({ ...file, path: relativePath });
     expectedFiles.push(await readExpectedState(absolutePath, relativePath));
   }
 
-  for (const candidate of normalizedFiles) {
-    for (const other of normalizedFiles) {
-      if (candidate === other) continue;
-      const relative = path.relative(candidate.path, other.path);
-      if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
-        throw new NestedPlanTargetError(other.path);
+  for (const candidate of targets.keys()) {
+    for (const [other, originalPath] of targets) {
+      if (other.startsWith(`${candidate}${path.sep}`)) {
+        throw new NestedPlanTargetError(originalPath);
       }
     }
   }

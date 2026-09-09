@@ -50,6 +50,18 @@ Planning does not write files. It:
 Caller-supplied `existing_files` support review output only. They are not trusted as
 the security snapshot used during application.
 
+Target collision checks use one conservative policy on every platform. After path
+normalization, JavaScript `toLowerCase()` supplies comparison keys for both duplicate
+targets and file/child overlaps. For example, `Readme.md` with `readme.md`, or `Docs`
+with `docs/notes.txt`, is rejected regardless of operating system or filesystem.
+Path-segment boundaries distinguish overlaps from names such as `Docs` and `Docs2`.
+
+This deliberately rejects case-distinct targets even where the filesystem permits
+them. The comparison does not rewrite stored paths, change their spelling in plan
+identity, or lowercase write destinations. It is a lexical collision policy, not
+filesystem capability detection or a complete model of filesystem-specific Unicode
+equivalence. It does not establish full cross-platform support on its own.
+
 ## 2. Plan identity
 
 Every pending plan receives a deterministic SHA-256 identifier:

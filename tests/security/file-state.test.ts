@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
 import {
+  DuplicatePlanTargetError,
   NestedPlanTargetError,
   StaleChangePlanError,
   assertPlanFileStatesUnchanged,
@@ -71,5 +72,40 @@ describe("file state validation", () => {
       { path: "target", content: "file", purpose: "first" },
       { path: "target/nested.txt", content: "nested", purpose: "second" },
     ])).rejects.toBeInstanceOf(NestedPlanTargetError);
+  });
+
+  it.each([
+    ["Readme.md", "readme.md"],
+    ["Docs/Readme.md", "docs/README.md"],
+    ["unused/../Readme.md", "./readme.md"],
+    ["same.txt", "same.txt"],
+  ])("rejects duplicate targets %s and %s on every platform", async (first, second) => {
+    await expect(captureFileStates(allowedRoot, [
+      { path: first, content: "one", purpose: "first" },
+      { path: second, content: "two", purpose: "second" },
+    ])).rejects.toBeInstanceOf(DuplicatePlanTargetError);
+  });
+
+  it.each([
+    ["Target", "target/nested.txt"],
+    ["target/nested.txt", "Target"],
+    ["Docs/Target", "docs/target/nested.txt"],
+    ["Target", "target/..cache/nested.txt"],
+  ])("rejects overlapping targets %s and %s on every platform", async (first, second) => {
+    await expect(captureFileStates(allowedRoot, [
+      { path: first, content: "one", purpose: "first" },
+      { path: second, content: "two", purpose: "second" },
+    ])).rejects.toBeInstanceOf(NestedPlanTargetError);
+  });
+
+  it("preserves target spelling and accepts siblings and distinct path segments", async () => {
+    const paths = ["Docs/One.txt", "docs/Two.txt", "Target", "Targets/Child.txt", "Target.txt"];
+    const files = paths.map((target) => ({ path: target, content: "text", purpose: "test" }));
+    const captured = await captureFileStates(allowedRoot, files);
+
+    expect(captured.files.map((file) => file.path)).toEqual(paths.map((target) => path.normalize(target)));
+    expect(captured.expectedFiles).toEqual(paths.map((target) => ({
+      path: path.normalize(target), kind: "missing",
+    })));
   });
 });
