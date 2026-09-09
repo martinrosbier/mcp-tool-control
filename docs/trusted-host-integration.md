@@ -8,6 +8,8 @@ import { createMcpToolControl } from "mcp-tool-control";
 
 const { server, approvalController } = createMcpToolControl({
   allowedRoot: "C:\\work\\target-project",
+  maxPendingPlans: 100,
+  maxPendingPlanBytes: 16 * 1024 * 1024,
   audit: (event) => durableAuditSink.write(event),
 });
 

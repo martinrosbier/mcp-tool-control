@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ApprovalAlreadyDecidedError,
+  ApprovalNotExecutableError,
   PendingPlanUnavailableError,
   createTrustedApprovalBoundary,
 } from "../../src/approval/trusted-approval-boundary";
-import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
+import { PendingChangePlanStore, PlanStoreCapacityError } from "../../src/plans/pending-change-plan-store";
 
 const files = [
   { path: "notes/example.txt", content: "hello", purpose: "add a note" },
@@ -152,4 +153,44 @@ describe("createTrustedApprovalBoundary", () => {
     expect(recreatedDecision).not.toBe(originalDecision);
     expect(recreatedDecision.plan).toBe(recreatedPlan);
   });
+
+  it("preserves approved active plans when capacity rejects a new plan", () => {
+    const plans = new PendingChangePlanStore({ maxPlans: 1 });
+    const plan = plans.store(files);
+    const boundary = createTrustedApprovalBoundary(plans);
+    const approved = boundary.host.approve(plan.id);
+
+    expect(() => plans.store([{ ...files[0], content: "other" }])).toThrow(PlanStoreCapacityError);
+    expect(boundary.state.get(plan.id)).toBe(approved);
+    expect(boundary.execution.consume(plan).status).toBe("consumed");
+  });
+
+  it.each(["approved", "denied", "consumed"] as const)(
+    "does not inherit %s decisions after insertion cleans expired plans", (status) => {
+      let now = 0;
+      const plans = new PendingChangePlanStore({ maxPlans: 1, ttlMs: 100, now: () => now });
+      const boundary = createTrustedApprovalBoundary(plans, { now: () => now });
+      const original = plans.store(files);
+      if (status === "denied") boundary.host.deny(original.id);
+      else boundary.host.approve(original.id);
+      if (status === "consumed") boundary.execution.consume(original);
+
+      // Insert a different plan without looking up the expired original first.
+      now = 100;
+      plans.store([{ ...files[0], content: "other" }]);
+      expect(boundary.state.get(original.id)).toBeUndefined();
+      expect(() => boundary.execution.consume(original)).toThrow(ApprovalNotExecutableError);
+      expect(() => boundary.host.approve(original.id)).toThrow(PendingPlanUnavailableError);
+
+      now = 200;
+      const recreated = plans.store(files);
+      expect(recreated.id).toBe(original.id);
+      expect(recreated).not.toBe(original);
+      expect(boundary.state.get(recreated.id)).toBeUndefined();
+      expect(() => boundary.execution.consume(recreated)).toThrow(ApprovalNotExecutableError);
+      boundary.host.approve(recreated.id);
+      expect(() => boundary.execution.consume(original)).toThrow(ApprovalNotExecutableError);
+      expect(boundary.execution.consume(recreated).status).toBe("consumed");
+    },
+  );
 });

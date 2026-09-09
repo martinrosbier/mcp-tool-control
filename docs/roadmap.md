@@ -144,7 +144,7 @@ races; they do not eliminate every check/use window.
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: in progress.** Step 1 is implemented. Steps 2–4 and 7 address remaining
+**Status: in progress.** Steps 1–2 are implemented. Steps 3–4 and 7 address remaining
 gaps. Steps 5, 6, 8, and 9 require review before deciding whether a change is necessary.
 
 1. **Revalidate targets immediately before replacement.**
@@ -152,10 +152,13 @@ gaps. Steps 5, 6, 8, and 9 require review before deciding whether a change is ne
    - Regression tests cover changes after staging, changes between replacements,
      newly created targets, parent substitution, and consumed-approval replay.
    - A race between the final check and rename remains possible.
+   - Commits: `cea1d1c`.
 2. **Bound retained plans and approval records.**
-   - Introduce configurable capacity and predictable expiry cleanup.
-   - Ensure approval records do not indefinitely retain removed plan instances.
-   - Test active entries, capacity behavior, cleanup, and approval isolation.
+   - Implemented: configurable count and payload limits, with expiry cleanup before
+     insertion and rejection at capacity without active-plan eviction.
+   - Approval decisions use weak references keyed by the exact plan instance.
+   - Tests cover repeated distinct requests, byte limits, expiry cleanup, active
+     approvals, recreated instances, and concurrent MCP planning.
 3. **Isolate audit failures from operation results.**
    - Prevent audit exceptions from changing successful outcomes or masking failures.
    - Cover policy denial and approval transitions as well as tool execution.
@@ -309,11 +312,11 @@ availability and execution across multiple servers.
 
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
-- Phase 7 is in progress: per-target replacement checks are implemented; bounded
-  plan and approval storage is next.
+- Phase 7 is in progress: per-target replacement checks and bounded plan storage
+  are implemented; audit failure isolation is next.
 - Phase 8 completes verification and release.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 112 tests across 17 files, typechecking,
+- Local validation on September 8, 2026: 132 tests across 18 files, typechecking,
   and build passed. Remote CI and clean-checkout validation were not verified.
 
 ## First Release Criteria

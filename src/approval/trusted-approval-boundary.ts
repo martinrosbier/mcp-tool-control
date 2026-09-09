@@ -68,7 +68,9 @@ export function createTrustedApprovalBoundary(
   plans: PendingChangePlanStore,
   options: TrustedApprovalBoundaryOptions = {},
 ): TrustedApprovalBoundary {
-  const decisions = new Map<string, ApprovalDecision>();
+  // Decisions must not keep expired plans alive after the store releases them.
+  // Object keys also bind approval to the exact stored plan instance.
+  const decisions = new WeakMap<PendingChangePlan, ApprovalDecision>();
   const now = options.now ?? Date.now;
   const audit = options.audit;
 
@@ -90,9 +92,7 @@ export function createTrustedApprovalBoundary(
   }
 
   function activePlan(planId: string): PendingChangePlan | undefined {
-    const plan = plans.get(planId);
-    if (!plan) decisions.delete(planId);
-    return plan;
+    return plans.get(planId);
   }
 
   function decide(planId: string, status: ApprovalStatus): ApprovalDecision {
@@ -100,13 +100,10 @@ export function createTrustedApprovalBoundary(
       const plan = activePlan(planId);
       if (!plan) throw new PendingPlanUnavailableError(planId);
 
-      const existing = decisions.get(planId);
+      const existing = decisions.get(plan);
       if (existing) {
-        if (existing.plan === plan) {
-          if (existing.status === status) return existing;
-          throw new ApprovalAlreadyDecidedError(planId);
-        }
-        decisions.delete(planId);
+        if (existing.status === status) return existing;
+        throw new ApprovalAlreadyDecidedError(planId);
       }
 
       const decision = Object.freeze({
@@ -115,7 +112,7 @@ export function createTrustedApprovalBoundary(
         status,
         decidedAt: new Date(now()).toISOString(),
       });
-      decisions.set(planId, decision);
+      decisions.set(plan, decision);
       auditDecision(planId, status, "success");
       return decision;
     } catch (error) {
@@ -129,12 +126,7 @@ export function createTrustedApprovalBoundary(
       const plan = activePlan(planId);
       if (!plan) return undefined;
 
-      const decision = decisions.get(planId);
-      if (decision?.plan !== plan) {
-        decisions.delete(planId);
-        return undefined;
-      }
-      return decision;
+      return decisions.get(plan);
     },
   });
 
@@ -143,7 +135,7 @@ export function createTrustedApprovalBoundary(
     consume(plan: PendingChangePlan): ApprovalDecision {
       try {
         const active = activePlan(plan.id);
-        const decision = decisions.get(plan.id);
+        const decision = decisions.get(plan);
         if (
           active !== plan
           || decision?.plan !== plan
@@ -157,7 +149,7 @@ export function createTrustedApprovalBoundary(
           status: "consumed" as const,
           consumedAt: new Date(now()).toISOString(),
         });
-        decisions.set(plan.id, consumed);
+        decisions.set(plan, consumed);
         auditDecision(plan.id, "consume", "success");
         return consumed;
       } catch (error) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
+import { PendingChangePlanStore, PlanStoreCapacityError } from "../../src/plans/pending-change-plan-store";
 
 const files = [
   { path: "notes/example.txt", content: "hello", purpose: "add a note" },
@@ -68,4 +68,80 @@ describe("PendingChangePlanStore", () => {
       "Change plan TTL must be a positive number",
     );
   });
+
+  it("rejects repeated distinct plans at capacity without evicting active entries", () => {
+    const store = new PendingChangePlanStore({ maxPlans: 3 });
+    const active = [0, 1, 2].map((index) => store.store([
+      { ...files[0], content: `plan ${index}` },
+    ]));
+
+    for (let index = 3; index < 100; index++) {
+      expect(() => store.store([{ ...files[0], content: `plan ${index}` }]))
+        .toThrow(PlanStoreCapacityError);
+    }
+    for (const plan of active) expect(store.get(plan.id)).toBe(plan);
+    expect(store.store([{ ...files[0], content: "plan 0" }])).toBe(active[0]);
+  });
+
+  it("cleans expired entries on insertion and preserves active entries", () => {
+    let now = 0;
+    const store = new PendingChangePlanStore({ maxPlans: 2, ttlMs: 100, now: () => now });
+    const expired = store.store(files);
+    now = 50;
+    const active = store.store([{ ...files[0], content: "active" }]);
+    now = 100;
+
+    const next = store.store([{ ...files[0], content: "new" }]);
+
+    expect(store.get(expired.id)).toBeUndefined();
+    expect(store.get(active.id)).toBe(active);
+    expect(store.get(next.id)).toBe(next);
+    expect(() => store.store(files)).toThrow(PlanStoreCapacityError);
+  });
+
+  it("enforces the combined UTF-8 payload budget and permits duplicates at the limit", () => {
+    const unicodeFiles = [{ ...files[0], content: "é🔒" }];
+    const bytes = Buffer.byteLength(JSON.stringify({ files: unicodeFiles, expectedFiles: [] }));
+    const store = new PendingChangePlanStore({ maxPlans: 10, maxBytes: bytes });
+    const plan = store.store(unicodeFiles);
+
+    expect(store.store(unicodeFiles)).toBe(plan);
+    expect(() => store.store(files)).toThrow(PlanStoreCapacityError);
+    expect(store.get(plan.id)).toBe(plan);
+    expect(() => new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(unicodeFiles))
+      .toThrow(PlanStoreCapacityError);
+  });
+
+  it("counts file metadata and expected state in the payload budget", () => {
+    const expectedFiles = [{ path: files[0].path, kind: "missing" as const }];
+    const bytes = Buffer.byteLength(JSON.stringify({ files, expectedFiles }));
+    expect(() => new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(files, expectedFiles))
+      .toThrow(PlanStoreCapacityError);
+    const store = new PendingChangePlanStore({ maxBytes: bytes });
+    const plan = store.store(files, expectedFiles);
+    expect(store.get(plan.id)).toBe(plan);
+  });
+
+  it.each(["insertion", "lookup"])("reclaims expired payload bytes during %s", (cleanup) => {
+    let now = 0;
+    const bytes = Buffer.byteLength(JSON.stringify({ files, expectedFiles: [] }));
+    const store = new PendingChangePlanStore({ maxBytes: bytes, ttlMs: 100, now: () => now });
+    const original = store.store(files);
+    now = 100;
+    if (cleanup === "lookup") {
+      expect(store.get(original.id)).toBeUndefined();
+      expect(store.get(original.id)).toBeUndefined();
+    }
+
+    const replacement = store.store([{ ...files[0], content: "other" }]);
+    expect(store.get(replacement.id)).toBe(replacement);
+    expect(() => store.store(files)).toThrow(PlanStoreCapacityError);
+  });
+
+  it.each([0, -1, 1.5, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1])(
+    "rejects invalid resource limits: %s", (limit) => {
+      expect(() => new PendingChangePlanStore({ maxPlans: limit })).toThrow();
+      expect(() => new PendingChangePlanStore({ maxBytes: limit })).toThrow();
+    },
+  );
 });

@@ -24,7 +24,8 @@ sandbox or a production-ready remote service.
 The controlled-write path includes:
 
 - Deterministic plan identity that is never treated as authority.
-- Immutable in-memory pending plans with a ten-minute default expiry.
+- Immutable in-memory pending plans with a ten-minute default expiry, a 100-plan
+  limit, and a 16 MiB retained payload budget.
 - A trusted approval controller that is not exposed through MCP.
 - Approval binding to the exact stored plan instance.
 - Absolute-path, traversal, symlink, junction, duplicate, and overlapping-target checks.
@@ -73,6 +74,8 @@ import { createMcpToolControl } from "mcp-tool-control";
 
 const { server, approvalController } = createMcpToolControl({
   allowedRoot: "/absolute/path/to/workspace",
+  maxPendingPlans: 100,
+  maxPendingPlanBytes: 16 * 1024 * 1024,
   audit: (event) => auditStore.write(event),
   onInternalError: (error) => protectedErrorSink.write(error),
 });
@@ -98,6 +101,11 @@ unauthenticated HTTP, IPC, queue, or callback endpoint.
 
 See [Trusted host integration](docs/trusted-host-integration.md) for the complete
 embedding model.
+
+Plan limits are trusted host configuration. Before each insertion, expired plans
+are removed. New plans that exceed either limit return `PLAN_STORE_FULL`; active
+plans are not evicted. The byte budget counts serialized UTF-8 files and expected
+state, not total process memory or transient request allocations.
 
 ## Controlled write lifecycle
 

@@ -18,6 +18,8 @@ import { SERVER_VERSION } from "./version.js";
 
 export interface McpToolControlOptions {
   allowedRoot: string;
+  maxPendingPlans?: number;
+  maxPendingPlanBytes?: number;
   audit?: AuditSink;
   onInternalError?: (error: unknown) => void;
 }
@@ -30,7 +32,10 @@ export interface McpToolControlRuntime {
 export function createMcpToolControl(
   options: McpToolControlOptions,
 ): McpToolControlRuntime {
-  const planStore = new PendingChangePlanStore();
+  const planStore = new PendingChangePlanStore({
+    maxPlans: options.maxPendingPlans,
+    maxBytes: options.maxPendingPlanBytes,
+  });
   const approvalBoundary = createTrustedApprovalBoundary(planStore, {
     audit: options.audit,
   });

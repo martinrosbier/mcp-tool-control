@@ -77,8 +77,27 @@ The server stores an immutable copy of each plan. The plan includes:
 - Creation and expiration timestamps.
 
 The default lifetime is ten minutes. Resubmitting an identical active plan returns
-the same object without extending its expiration. Expired plans disappear on
-lookup.
+the same object without extending its expiration or consuming additional capacity.
+Expired plans are removed on lookup and swept before every insertion. No background
+timer is required; idle expired entries remain within the configured storage limits.
+
+The store defaults to at most 100 plans and a 16 MiB combined payload budget.
+The trusted host configures these with `maxPendingPlans` and `maxPendingPlanBytes`
+when constructing the runtime. Both must be positive safe integers. Payload size
+is the UTF-8 byte length of the serialized `files` and `expectedFiles` arrays,
+including their enclosing object. This bounds retained payload, not total JS heap
+or temporary allocations while processing a request.
+
+After expiry cleanup, a new plan that exceeds either limit is rejected with the
+safe error code `PLAN_STORE_FULL`. Active plans are never evicted to admit another
+plan. Approved, denied, and consumed plans count toward the limits until expiry;
+retaining consumed plans preserves their replay protection. Expiry removal releases
+the plan's byte reservation.
+
+Approval decisions are held in a `WeakMap` keyed by the exact plan object. The
+approval boundary cannot keep a removed plan alive on its own, and a recreated
+plan cannot inherit its predecessor's decision. Trusted host code that retains a
+returned plan or decision is responsible for its own references.
 
 Pending plans currently live in process memory. Restarting the process invalidates
 all pending plans and decisions, which is a fail-closed behavior.

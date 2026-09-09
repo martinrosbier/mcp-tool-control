@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ApprovalNotExecutableError } from "../approval/trusted-approval-boundary.js";
 import { PolicyDeniedError } from "../policy/tool-policy.js";
+import { PlanStoreCapacityError } from "../plans/pending-change-plan-store.js";
 import { PathOutsideRootError } from "../security/contained-path.js";
 import {
   DuplicatePlanTargetError,
@@ -17,6 +18,7 @@ export type SafeToolErrorCode =
   | "PATH_NOT_ALLOWED"
   | "INVALID_PLAN_TARGET"
   | "PLAN_STALE"
+  | "PLAN_STORE_FULL"
   | "TOOL_EXECUTION_FAILED";
 
 export interface SafeToolError {
@@ -25,6 +27,12 @@ export interface SafeToolError {
 }
 
 export function toSafeToolError(error: unknown): SafeToolError {
+  if (error instanceof PlanStoreCapacityError) {
+    return {
+      code: "PLAN_STORE_FULL",
+      message: "Pending plan capacity exceeded; submit a smaller plan or wait for plans to expire",
+    };
+  }
   if (error instanceof z.ZodError) {
     return { code: "INVALID_ARGUMENTS", message: "Invalid tool arguments" };
   }
