@@ -3,9 +3,15 @@ import { mkdir, open, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import type { PendingChangePlan } from "../plans/pending-change-plan-store.js";
 import { resolveContainedPath } from "./contained-path.js";
-import { assertPlanFileStatesUnchanged } from "./file-state.js";
+import {
+  assertFileStateUnchanged,
+  assertPlanFileStatesUnchanged,
+  InvalidPlanTargetError,
+  StaleChangePlanError,
+} from "./file-state.js";
 
 interface StagedWrite {
+  relativePath: string;
   targetPath: string;
   temporaryPath: string;
 }
@@ -31,7 +37,7 @@ async function stageFile(
     await handle.close();
   }
 
-  return { targetPath, temporaryPath };
+  return { relativePath, targetPath, temporaryPath };
 }
 
 export async function applyFileChangesSafely(
@@ -51,8 +57,17 @@ export async function applyFileChangesSafely(
     await assertPlanFileStatesUnchanged(allowedRoot, plan);
 
     const appliedPaths: string[] = [];
+    const expectedFiles = new Map(plan.expectedFiles.map((state) => [state.path, state]));
     for (const stagedWrite of staged) {
-      await rename(stagedWrite.temporaryPath, stagedWrite.targetPath);
+      const expected = expectedFiles.get(stagedWrite.relativePath);
+      if (!expected) throw new InvalidPlanTargetError(stagedWrite.relativePath);
+      // Keep containment and state checks next to each replacement. Path-based
+      // checks mitigate races but cannot eliminate changes during the rename gap.
+      const targetPath = await assertFileStateUnchanged(allowedRoot, expected);
+      if (targetPath !== stagedWrite.targetPath) {
+        throw new StaleChangePlanError(stagedWrite.relativePath);
+      }
+      await rename(stagedWrite.temporaryPath, targetPath);
       appliedPaths.push(path.relative(allowedRoot, stagedWrite.targetPath));
     }
     return appliedPaths;

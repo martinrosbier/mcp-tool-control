@@ -144,12 +144,14 @@ races; they do not eliminate every check/use window.
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: pending.** Steps 1–4 and 7 address confirmed gaps. Steps 5, 6, 8, and 9
-require review before deciding whether a change is necessary.
+**Status: in progress.** Step 1 is implemented. Steps 2–4 and 7 address remaining
+gaps. Steps 5, 6, 8, and 9 require review before deciding whether a change is necessary.
 
 1. **Revalidate targets immediately before replacement.**
-   - Reduce the gap between batch validation and each sequential rename.
-   - Test replacement-time content changes and parent substitution where practical.
+   - Implemented: recheck each target's containment and expected state before rename.
+   - Regression tests cover changes after staging, changes between replacements,
+     newly created targets, parent substitution, and consumed-approval replay.
+   - A race between the final check and rename remains possible.
 2. **Bound retained plans and approval records.**
    - Introduce configurable capacity and predictable expiry cleanup.
    - Ensure approval records do not indefinitely retain removed plan instances.
@@ -307,10 +309,11 @@ availability and execution across multiple servers.
 
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
-- Phase 7 contains the remaining concrete hardening work.
+- Phase 7 is in progress: per-target replacement checks are implemented; bounded
+  plan and approval storage is next.
 - Phase 8 completes verification and release.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 108 tests across 16 files, typechecking,
+- Local validation on September 8, 2026: 112 tests across 17 files, typechecking,
   and build passed. Remote CI and clean-checkout validation were not verified.
 
 ## First Release Criteria

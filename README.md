@@ -30,7 +30,8 @@ The controlled-write path includes:
 - Absolute-path, traversal, symlink, junction, duplicate, and overlapping-target checks.
 - Expected-state hashes and stale-write rejection.
 - Single-use approval consumption and concurrent replay protection.
-- Exclusive temporary-file staging, flushing, revalidation, and rename replacement.
+- Exclusive temporary-file staging, flushing, and target revalidation immediately
+  before each rename replacement.
 - Structured safe errors and privacy-preserving audit events.
 
 ## Requirements

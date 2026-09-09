@@ -132,9 +132,12 @@ Before writing, the server resolves every path beneath `allowedRoot` again and
 compares current state with the stored snapshot. Application is rejected if a file
 was created, deleted, changed to a non-file target, or has different contents.
 
-The state is checked a second time after temporary files have been staged and
-before replacement begins. This narrows the check-to-use window and prevents
-staged content from being committed over a detected concurrent change.
+All targets are checked again after temporary files have been staged. Immediately
+before each individual replacement, the server rechecks that target's containment
+and expected state. A change to a later target during an earlier replacement is
+therefore checked before that later write proceeds. These stale-state and TOCTOU
+mitigations narrow the check-to-use window; a race between the last check and rename
+remains possible.
 
 ## 7. Approval consumption
 
@@ -150,7 +153,7 @@ than retrying an operation whose partial effects may be uncertain.
 
 ## 8. Safe file replacement
 
-For each planned file, the server:
+The server stages every planned file, then begins replacement:
 
 1. Resolves the target beneath `allowedRoot`.
 2. Creates missing parent directories.
@@ -158,7 +161,8 @@ For each planned file, the server:
 4. Creates an exclusive temporary file in the destination directory.
 5. Writes the intended UTF-8 content and flushes the file.
 6. Revalidates all planned target states.
-7. Renames staged files onto their targets.
+7. For each staged file, rechecks target containment and expected state immediately
+   before renaming it onto the target.
 8. Removes remaining temporary files on success or failure.
 
 Placing a temporary file in the destination directory allows rename-based
@@ -181,8 +185,9 @@ than values. The bundled logger writes to stderr so MCP stdio stdout remains val
 ### Multi-file plans are not transactions
 
 Each individual target uses staged rename replacement, but a plan containing
-multiple files is not an all-or-nothing filesystem transaction. If a later rename
-fails, earlier files may already have been replaced. Approval remains consumed.
+multiple files is not an all-or-nothing filesystem transaction. If a later target
+check or rename fails, earlier files may already have been replaced. Approval
+remains consumed.
 
 ### Filesystem races cannot be eliminated by path checks alone
 

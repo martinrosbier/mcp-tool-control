@@ -103,15 +103,23 @@ export async function assertPlanFileStatesUnchanged(
   plan: PendingChangePlan,
 ): Promise<void> {
   for (const expected of plan.expectedFiles) {
-    const absolutePath = await resolveContainedPath(allowedRoot, expected.path);
-    const current = await readExpectedState(absolutePath, expected.path);
-    if (
-      current.kind !== expected.kind
-      || (current.kind === "file"
-        && expected.kind === "file"
-        && current.contentHash !== expected.contentHash)
-    ) {
-      throw new StaleChangePlanError(expected.path);
-    }
+    await assertFileStateUnchanged(allowedRoot, expected);
   }
+}
+
+export async function assertFileStateUnchanged(
+  allowedRoot: string,
+  expected: ExpectedFileState,
+): Promise<string> {
+  const absolutePath = await resolveContainedPath(allowedRoot, expected.path);
+  const current = await readExpectedState(absolutePath, expected.path);
+  if (
+    current.kind !== expected.kind
+    || (current.kind === "file"
+      && expected.kind === "file"
+      && current.contentHash !== expected.contentHash)
+  ) {
+    throw new StaleChangePlanError(expected.path);
+  }
+  return absolutePath;
 }
