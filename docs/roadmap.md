@@ -128,7 +128,8 @@ races; they do not eliminate every check/use window.
 
 ## Phase 6 — CI and Developer Documentation
 
-**Status: implementation and documentation complete; remote CI success remains to be verified.**
+**Status: implementation and documentation complete. Hosted CI was later
+removed by release decision; `npm run check` is the canonical validation task.**
 
 1. **Configure GitLab checks.**
    - Install from the lockfile, typecheck, test, and build.
@@ -211,14 +212,16 @@ as part of the relevant change rather than as a separate development phase.
 
 ## Phase 8 — Release Preparation
 
-**Status: pending.**
+**Status: in progress.**
 
 1. **Verify from a clean checkout.**
    - Run `npm ci` and `npm run check`, plus configured repository checks.
    - Distinguish clean-checkout results from checks using an existing installation.
-2. **Confirm CI results and platform coverage.**
-   - Verify the actual GitLab pipeline, including security jobs.
-   - State tested platforms accurately; configuration alone is not passing evidence.
+2. **Record validation evidence.**
+   - Hosted CI was removed by decision; `npm run check` is the canonical,
+     provider-independent validation task and is run manually.
+   - State tested platforms accurately; an existing-installation run is not
+     clean-checkout evidence until repeated from a fresh clone or worktree.
 3. **Finalize repository metadata and licensing.**
    - Review tracked artifacts, stale references, links, and machine-specific paths.
    - Resolve the README repository URL placeholder and license choice.
@@ -334,12 +337,17 @@ availability and execution across multiple servers.
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
 - Phase 7 security and reliability hardening is complete.
-- Phase 8 is in progress: clean-checkout validation and dependency auditing pass;
-  repository metadata, licensing, and release publication decisions remain.
+- Phase 8 is in progress: dependencies were upgraded (MCP SDK 1.32.2, Zod 4.6.7)
+  with a zero-vulnerability audit, Apache-2.0 licensing and third-party
+  attribution are in place, repository metadata points at the GitHub remote,
+  and hosted CI was removed in favor of canonical local validation. Clean-
+  checkout verification, the `v1.0.0` tag, and publication (GitHub release and
+  npm package) remain.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on September 8, 2026: 139 tests across 19 files, typechecking,
-  build, clean-checkout installation, and high-severity dependency auditing passed.
-  Remote CI and release metadata decisions remain to be verified.
+- Local validation on October 24, 2026 (existing installation, not a clean
+  checkout): formatting, lint, typechecking, 139 tests across 19 files, build,
+  and a zero-vulnerability dependency audit passed. A genuinely clean-checkout
+  run remains to be recorded.
 
 ## First Release Criteria
 

@@ -45,13 +45,14 @@ The controlled-write path includes:
 ## Quick start
 
 ```sh
-git clone <repository-url> mcp-tool-control
+git clone https://github.com/martinrosbier/mcp-tool-control.git mcp-tool-control
 cd mcp-tool-control
 npm ci
 npm run check
 ```
 
-`npm run check` runs TypeScript typechecking, all tests, and the production build.
+`npm run check` runs formatting and lint validation, TypeScript typechecking,
+all tests, and the production build.
 
 Start the bundled MCP stdio server with:
 
@@ -227,15 +228,17 @@ not create a parallel approval shortcut.
 
 ## Verification
 
+`npm run check` is the canonical, provider-independent validation task:
+
 ```sh
-npm run typecheck
-npm test
-npm run build
-npm audit --audit-level=high
+npm run check
+npm audit --omit=dev --audit-level=high
 ```
 
-GitLab CI performs clean installs, typechecking, tests, production builds,
-high-severity dependency auditing, and pipeline secret detection.
+There is no hosted CI: validation is not run automatically on pushes or pull
+requests. Run `npm run check` locally, ideally from a clean checkout, before
+relying on the result. See [docs/roadmap.md](docs/roadmap.md) for the latest
+recorded validation evidence and dependency-audit status.
 
 ## Explicit limitations
 
@@ -278,5 +281,18 @@ tests/
 ## Status
 
 The core architecture is implemented and covered by unit, integration, and
-trust-boundary attack tests. Release preparation still includes public metadata,
-license review, clean-clone verification, and the first intentional release tag.
+trust-boundary attack tests. The project is licensed under Apache-2.0 and is
+prepared as version 1.0.0. Remaining release steps are clean-checkout
+verification, the release tag, and publication as a GitHub release and npm
+package; each requires an explicit maintainer action.
+
+## License and attribution
+
+`mcp-tool-control` is licensed under the [Apache License 2.0](LICENSE).
+
+It is an independent implementation built on the Model Context Protocol
+[specification](https://modelcontextprotocol.io) and the official
+[MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk).
+It is not affiliated with, endorsed by, or sponsored by Anthropic, the Linux
+Foundation, or the MCP project. Third-party components remain governed by
+their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
