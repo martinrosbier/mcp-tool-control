@@ -250,7 +250,8 @@ as part of the relevant change rather than as a separate development phase.
 
 ## Phase 10 — Trusted-Host Reference Implementation
 
-**Status: proposed.** Provide a minimal terminal-based trusted host that:
+**Status: implemented (v1.2.0).** The `mcp-tool-control-host` binary is a
+minimal terminal-based trusted host that:
 
 - Receives a change plan and displays the proposed writes.
 - Obtains explicit human approval through the trusted approval controller.
