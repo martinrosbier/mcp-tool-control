@@ -340,14 +340,14 @@ availability and execution across multiple servers.
 - Phase 8 is in progress: dependencies were upgraded (MCP SDK 1.32.2, Zod 4.6.7)
   with a zero-vulnerability audit, Apache-2.0 licensing and third-party
   attribution are in place, repository metadata points at the GitHub remote,
-  and hosted CI was removed in favor of canonical local validation. Clean-
-  checkout verification, the `v1.0.0` tag, and publication (GitHub release and
-  npm package) remain.
+  hosted CI was removed in favor of canonical local validation, and clean-
+  checkout verification passed. The `v1.0.0` tag and publication (GitHub
+  release and npm package) remain.
 - Phases 9–12 are optional future MCP integration work and do not block release.
-- Local validation on October 24, 2026 (existing installation, not a clean
-  checkout): formatting, lint, typechecking, 139 tests across 19 files, build,
-  and a zero-vulnerability dependency audit passed. A genuinely clean-checkout
-  run remains to be recorded.
+- Clean-checkout validation on October 24, 2026 (Windows, Node 22.15.0,
+  npm 10.9.2, commit `9e7b65e`, fresh `npm ci` in an isolated git worktree):
+  formatting, lint, typechecking, 139 tests across 19 files, build, and a
+  zero-vulnerability production dependency audit passed.
 
 ## First Release Criteria
 
