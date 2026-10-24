@@ -22,26 +22,30 @@ export const PlanChangesInputSchema = z.object({
   description: z
     .string()
     .min(1)
+    .max(2_000)
     .describe("Short, human-readable description of what this plan accomplishes."),
   files: z
     .array(
       z.object({
-        path: z.string().min(1),
-        content: z.string(),
-        purpose: z.string().min(1),
+        path: z.string().min(1).max(500),
+        content: z.string().max(1_000_000),
+        purpose: z.string().min(1).max(500),
       }),
     )
     .min(1)
-    .describe("Files to write. Paths are interpreted relative to the target repo root."),
+    .max(100)
+    .describe("Files to write (max 100). Paths are interpreted relative to the target repo root."),
   existing_files: z
-    .array(z.object({ path: z.string(), content: z.string() }))
+    .array(z.object({ path: z.string().max(500), content: z.string().max(1_000_000) }))
+    .max(100)
     .optional()
     .default([])
     .describe(
-      "Current contents of any files in `files` that already exist in the target repo. Used for conflict detection.",
+      "Current contents of any files in `files` that already exist in the target repo (max 100). Used for conflict detection.",
     ),
   suggested_commit: z
     .string()
+    .max(500)
     .optional()
     .describe("Suggested commit message the host can show alongside the diff."),
 });
@@ -62,12 +66,28 @@ export const planChangesDefinition = {
       },
       files: {
         type: "array",
+        minItems: 1,
+        maxItems: 100,
         items: {
           type: "object",
           properties: {
-            path: { type: "string", description: "Target path relative to repo root" },
-            content: { type: "string", description: "Full proposed file contents" },
-            purpose: { type: "string", description: "One-line reason this file is being written" },
+            path: {
+              type: "string",
+              minLength: 1,
+              maxLength: 500,
+              description: "Target path relative to repo root",
+            },
+            content: {
+              type: "string",
+              maxLength: 1_000_000,
+              description: "Full proposed file contents",
+            },
+            purpose: {
+              type: "string",
+              minLength: 1,
+              maxLength: 500,
+              description: "One-line reason this file is being written",
+            },
           },
           required: ["path", "content", "purpose"],
         },
@@ -75,11 +95,12 @@ export const planChangesDefinition = {
       },
       existing_files: {
         type: "array",
+        maxItems: 100,
         items: {
           type: "object",
           properties: {
-            path: { type: "string" },
-            content: { type: "string" },
+            path: { type: "string", maxLength: 500 },
+            content: { type: "string", maxLength: 1_000_000 },
           },
           required: ["path", "content"],
         },
@@ -88,6 +109,7 @@ export const planChangesDefinition = {
       },
       suggested_commit: {
         type: "string",
+        maxLength: 500,
         description: "Suggested commit message the host can show alongside the diff.",
       },
     },

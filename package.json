@@ -1,11 +1,20 @@
 {
   "name": "mcp-tool-control",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
   "type": "module",
   "description": "A small TypeScript MCP foundation for controlled tool execution.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinrosbier/mcp-tool-control.git"
+  },
+  "homepage": "https://github.com/martinrosbier/mcp-tool-control#readme",
+  "bugs": "https://github.com/martinrosbier/mcp-tool-control/issues",
   "main": "dist/runtime.js",
   "types": "dist/runtime.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/runtime.d.ts",
@@ -25,8 +34,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^3.24.3"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.19.18",
@@ -35,7 +44,7 @@
     "tsx": "^4.23.13",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=20"
