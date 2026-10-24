@@ -31,6 +31,18 @@ typecheck:
   script:
     - npm run typecheck
 
+format:
+  extends: .node_job
+  stage: test
+  script:
+    - npm run format:check
+
+lint:
+  extends: .node_job
+  stage: test
+  script:
+    - npm run lint
+
 test:
   extends: .node_job
   stage: test
