@@ -16,9 +16,7 @@ describe("plan, approve, and apply workflow", () => {
   let allowedRoot: string;
   let client: Client;
   let server: ReturnType<typeof createMcpToolControl>["server"];
-  let approvalController: ReturnType<
-    typeof createMcpToolControl
-  >["approvalController"];
+  let approvalController: ReturnType<typeof createMcpToolControl>["approvalController"];
 
   beforeEach(async () => {
     allowedRoot = await mkdtemp(path.join(os.tmpdir(), "mcp-tool-control-e2e-"));
@@ -37,10 +35,7 @@ describe("plan, approve, and apply workflow", () => {
     await rm(allowedRoot, { recursive: true, force: true });
   });
 
-  async function planFile(
-    targetPath: string,
-    content: string,
-  ): Promise<PlanResponse> {
+  async function planFile(targetPath: string, content: string): Promise<PlanResponse> {
     const result = await client.callTool({
       name: "plan-changes",
       arguments: {
@@ -70,10 +65,9 @@ describe("plan, approve, and apply workflow", () => {
     });
 
     expect(applied.isError).not.toBe(true);
-    await expect(readFile(
-      path.join(allowedRoot, "notes", "example.txt"),
-      "utf8",
-    )).resolves.toBe("hello");
+    await expect(readFile(path.join(allowedRoot, "notes", "example.txt"), "utf8")).resolves.toBe(
+      "hello",
+    );
 
     const replay = await client.callTool({
       name: "apply-changes",
@@ -92,8 +86,9 @@ describe("plan, approve, and apply workflow", () => {
     });
 
     expect(result.isError).toBe(true);
-    await expect(readFile(path.join(allowedRoot, "denied.txt"), "utf8"))
-      .rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(allowedRoot, "denied.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("does not approve or apply an expired pending plan", async () => {
@@ -109,16 +104,15 @@ describe("plan, approve, and apply workflow", () => {
     const plan = await planFile("expired.txt", "not written");
     now.mockReturnValue(10 * 60 * 1_000 + 1_000);
 
-    expect(() => approvalController.approve(plan.plan_id)).toThrow(
-      "Pending plan is unavailable",
-    );
+    expect(() => approvalController.approve(plan.plan_id)).toThrow("Pending plan is unavailable");
     const result = await client.callTool({
       name: "apply-changes",
       arguments: { plan_id: plan.plan_id },
     });
 
     expect(result.isError).toBe(true);
-    await expect(readFile(path.join(allowedRoot, "expired.txt"), "utf8"))
-      .rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(allowedRoot, "expired.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 });

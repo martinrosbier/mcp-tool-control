@@ -15,11 +15,11 @@ sandbox or a production-ready remote service.
 
 ## What it includes
 
-| Tool | Access | Behavior |
-| --- | --- | --- |
-| `inspect-text` | `read` | Returns bounded structural metadata without echoing submitted text. |
-| `plan-changes` | `plan` | Validates contained paths, captures filesystem state, and stores an immutable expiring write plan. |
-| `apply-changes` | `write` | Applies only the exact pending plan approved through the trusted host capability. |
+| Tool            | Access  | Behavior                                                                                           |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `inspect-text`  | `read`  | Returns bounded structural metadata without echoing submitted text.                                |
+| `plan-changes`  | `plan`  | Validates contained paths, captures filesystem state, and stores an immutable expiring write plan. |
+| `apply-changes` | `write` | Applies only the exact pending plan approved through the trusted host capability.                  |
 
 The controlled-write path includes:
 

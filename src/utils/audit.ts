@@ -81,9 +81,7 @@ export function summarizeInputForLog(input: unknown): string {
 }
 
 /** Returns output dimensions only; tool response text never enters the audit record. */
-export function summarizeOutputForLog(
-  output: readonly { type: "text"; text: string }[],
-): string {
+export function summarizeOutputForLog(output: readonly { type: "text"; text: string }[]): string {
   return JSON.stringify({
     contentItemCount: output.length,
     textCharacterCount: output.reduce((total, item) => total + item.text.length, 0),

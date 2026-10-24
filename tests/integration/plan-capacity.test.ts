@@ -63,7 +63,9 @@ describe("pending plan capacity through MCP", () => {
 
     const applied = await client.callTool({ name: "apply-changes", arguments: { plan_id: id } });
     expect(applied.isError).not.toBe(true);
-    await expect(readFile(path.join(allowedRoot, "target.txt"), "utf8")).resolves.toBe("approved content");
+    await expect(readFile(path.join(allowedRoot, "target.txt"), "utf8")).resolves.toBe(
+      "approved content",
+    );
     expect((await plan("next content")).data.code).toBe("PLAN_STORE_FULL");
 
     now += 10 * 60 * 1_000;

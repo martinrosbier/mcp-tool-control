@@ -26,10 +26,7 @@ describe("file state validation", () => {
     const captured = await captureFileStates(allowedRoot, [
       { path: targetPath, content, purpose: "test" },
     ]);
-    return new PendingChangePlanStore().store(
-      captured.files,
-      captured.expectedFiles,
-    );
+    return new PendingChangePlanStore().store(captured.files, captured.expectedFiles);
   }
 
   it("accepts unchanged existing file state", async () => {
@@ -44,8 +41,9 @@ describe("file state validation", () => {
     const plan = await createPlan("example.txt");
     await writeFile(path.join(allowedRoot, "example.txt"), "changed");
 
-    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan))
-      .rejects.toBeInstanceOf(StaleChangePlanError);
+    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan)).rejects.toBeInstanceOf(
+      StaleChangePlanError,
+    );
   });
 
   it("rejects a file deleted after planning", async () => {
@@ -54,8 +52,9 @@ describe("file state validation", () => {
     const plan = await createPlan("example.txt");
     await unlink(target);
 
-    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan))
-      .rejects.toBeInstanceOf(StaleChangePlanError);
+    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan)).rejects.toBeInstanceOf(
+      StaleChangePlanError,
+    );
   });
 
   it("rejects a file created after planning", async () => {
@@ -63,15 +62,18 @@ describe("file state validation", () => {
     await mkdir(path.join(allowedRoot, "nested"));
     await writeFile(path.join(allowedRoot, "nested", "example.txt"), "surprise");
 
-    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan))
-      .rejects.toBeInstanceOf(StaleChangePlanError);
+    await expect(assertPlanFileStatesUnchanged(allowedRoot, plan)).rejects.toBeInstanceOf(
+      StaleChangePlanError,
+    );
   });
 
   it("rejects targets nested beneath another planned target", async () => {
-    await expect(captureFileStates(allowedRoot, [
-      { path: "target", content: "file", purpose: "first" },
-      { path: "target/nested.txt", content: "nested", purpose: "second" },
-    ])).rejects.toBeInstanceOf(NestedPlanTargetError);
+    await expect(
+      captureFileStates(allowedRoot, [
+        { path: "target", content: "file", purpose: "first" },
+        { path: "target/nested.txt", content: "nested", purpose: "second" },
+      ]),
+    ).rejects.toBeInstanceOf(NestedPlanTargetError);
   });
 
   it.each([
@@ -80,10 +82,12 @@ describe("file state validation", () => {
     ["unused/../Readme.md", "./readme.md"],
     ["same.txt", "same.txt"],
   ])("rejects duplicate targets %s and %s on every platform", async (first, second) => {
-    await expect(captureFileStates(allowedRoot, [
-      { path: first, content: "one", purpose: "first" },
-      { path: second, content: "two", purpose: "second" },
-    ])).rejects.toBeInstanceOf(DuplicatePlanTargetError);
+    await expect(
+      captureFileStates(allowedRoot, [
+        { path: first, content: "one", purpose: "first" },
+        { path: second, content: "two", purpose: "second" },
+      ]),
+    ).rejects.toBeInstanceOf(DuplicatePlanTargetError);
   });
 
   it.each([
@@ -92,10 +96,12 @@ describe("file state validation", () => {
     ["Docs/Target", "docs/target/nested.txt"],
     ["Target", "target/..cache/nested.txt"],
   ])("rejects overlapping targets %s and %s on every platform", async (first, second) => {
-    await expect(captureFileStates(allowedRoot, [
-      { path: first, content: "one", purpose: "first" },
-      { path: second, content: "two", purpose: "second" },
-    ])).rejects.toBeInstanceOf(NestedPlanTargetError);
+    await expect(
+      captureFileStates(allowedRoot, [
+        { path: first, content: "one", purpose: "first" },
+        { path: second, content: "two", purpose: "second" },
+      ]),
+    ).rejects.toBeInstanceOf(NestedPlanTargetError);
   });
 
   it("preserves target spelling and accepts siblings and distinct path segments", async () => {
@@ -103,9 +109,14 @@ describe("file state validation", () => {
     const files = paths.map((target) => ({ path: target, content: "text", purpose: "test" }));
     const captured = await captureFileStates(allowedRoot, files);
 
-    expect(captured.files.map((file) => file.path)).toEqual(paths.map((target) => path.normalize(target)));
-    expect(captured.expectedFiles).toEqual(paths.map((target) => ({
-      path: path.normalize(target), kind: "missing",
-    })));
+    expect(captured.files.map((file) => file.path)).toEqual(
+      paths.map((target) => path.normalize(target)),
+    );
+    expect(captured.expectedFiles).toEqual(
+      paths.map((target) => ({
+        path: path.normalize(target),
+        kind: "missing",
+      })),
+    );
   });
 });

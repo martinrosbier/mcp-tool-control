@@ -35,9 +35,7 @@ describe("audit events", () => {
   });
 
   it("summarizes output dimensions without recording response text", () => {
-    const summary = summarizeOutputForLog([
-      { type: "text", text: "sensitive response" },
-    ]);
+    const summary = summarizeOutputForLog([{ type: "text", text: "sensitive response" }]);
 
     expect(JSON.parse(summary)).toEqual({
       contentItemCount: 1,
@@ -91,7 +89,9 @@ describe("audit events", () => {
   it("handles a late rejection without waiting for audit delivery", async () => {
     const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
     let rejectDelivery!: (error: Error) => void;
-    const delivery = new Promise<void>((_resolve, reject) => { rejectDelivery = reject; });
+    const delivery = new Promise<void>((_resolve, reject) => {
+      rejectDelivery = reject;
+    });
     const audit = createBestEffortAuditSink(() => delivery);
 
     expect(audit!(event)).toBeUndefined();
@@ -101,15 +101,20 @@ describe("audit events", () => {
     expect(stderr.mock.calls).toEqual([["[AUDIT] Audit delivery failed"]]);
   });
 
-  it.each(["throw", "reject"])("isolates fallback logging failure after a sink %s", async (mode) => {
-    const stderr = vi.spyOn(console, "error").mockImplementation(() => { throw new Error("stderr failed"); });
-    const audit = createBestEffortAuditSink(() => {
-      if (mode === "reject") return Promise.reject(new Error("audit failed"));
-      throw new Error("audit failed");
-    });
+  it.each(["throw", "reject"])(
+    "isolates fallback logging failure after a sink %s",
+    async (mode) => {
+      const stderr = vi.spyOn(console, "error").mockImplementation(() => {
+        throw new Error("stderr failed");
+      });
+      const audit = createBestEffortAuditSink(() => {
+        if (mode === "reject") return Promise.reject(new Error("audit failed"));
+        throw new Error("audit failed");
+      });
 
-    expect(() => audit!(event)).not.toThrow();
-    await Promise.resolve();
-    expect(stderr).toHaveBeenCalledOnce();
-  });
+      expect(() => audit!(event)).not.toThrow();
+      await Promise.resolve();
+      expect(stderr).toHaveBeenCalledOnce();
+    },
+  );
 });

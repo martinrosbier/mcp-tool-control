@@ -10,7 +10,10 @@ export class PathOutsideRootError extends Error {
 
 function isWithinRoot(root: string, candidate: string): boolean {
   const relative = path.relative(root, candidate);
-  return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+  return (
+    relative === "" ||
+    (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))
+  );
 }
 
 async function nearestExistingPath(candidate: string): Promise<string> {

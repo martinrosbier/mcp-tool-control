@@ -5,7 +5,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+        args: ["--baseline", ".secrets.baseline"]
         exclude: package-lock.json
 
   - repo: https://github.com/gitleaks/gitleaks
@@ -17,10 +17,10 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ["--maxkb=1000"]
       - id: check-json
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: no-commit-to-branch
-        args: ['--branch', 'main', '--branch', 'master']
+        args: ["--branch", "main", "--branch", "master"]

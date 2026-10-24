@@ -18,10 +18,7 @@ describe("createMcpToolControl", () => {
   it("returns separate MCP and trusted-host capabilities", () => {
     const runtime = createMcpToolControl({ allowedRoot });
 
-    expect(Object.keys(runtime).sort()).toEqual([
-      "approvalController",
-      "server",
-    ]);
+    expect(Object.keys(runtime).sort()).toEqual(["approvalController", "server"]);
     expect(runtime.server).toBeDefined();
     expect(runtime.approvalController).toMatchObject({
       approve: expect.any(Function),

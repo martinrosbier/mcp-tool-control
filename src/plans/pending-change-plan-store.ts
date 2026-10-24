@@ -57,10 +57,7 @@ export class PendingChangePlanStore {
     }
   }
 
-  store(
-    files: FileToWrite[],
-    expectedFiles: ExpectedFileState[] = [],
-  ): PendingChangePlan {
+  store(files: FileToWrite[], expectedFiles: ExpectedFileState[] = []): PendingChangePlan {
     const createdAtMs = this.now();
     for (const [planId, plan] of this.plans) {
       if (Date.parse(plan.expiresAt) <= createdAtMs) this.remove(planId);
@@ -76,9 +73,7 @@ export class PendingChangePlanStore {
     const bytes = Buffer.byteLength(JSON.stringify({ files, expectedFiles }), "utf8");
     if (bytes > this.maxBytes - this.retainedBytes) throw new PlanStoreCapacityError();
 
-    const storedFiles = Object.freeze(
-      files.map((file) => Object.freeze({ ...file })),
-    );
+    const storedFiles = Object.freeze(files.map((file) => Object.freeze({ ...file })));
     const storedExpectedFiles = Object.freeze(
       expectedFiles.map((state) => Object.freeze({ ...state })),
     );

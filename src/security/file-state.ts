@@ -2,10 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import type { FileToWrite } from "../lib/conflicts.js";
-import type {
-  ExpectedFileState,
-  PendingChangePlan,
-} from "../plans/pending-change-plan-store.js";
+import type { ExpectedFileState, PendingChangePlan } from "../plans/pending-change-plan-store.js";
 import { resolveContainedPath } from "./contained-path.js";
 
 export class InvalidPlanTargetError extends Error {
@@ -112,10 +109,10 @@ export async function assertFileStateUnchanged(
   const absolutePath = await resolveContainedPath(allowedRoot, expected.path);
   const current = await readExpectedState(absolutePath, expected.path);
   if (
-    current.kind !== expected.kind
-    || (current.kind === "file"
-      && expected.kind === "file"
-      && current.contentHash !== expected.contentHash)
+    current.kind !== expected.kind ||
+    (current.kind === "file" &&
+      expected.kind === "file" &&
+      current.contentHash !== expected.contentHash)
   ) {
     throw new StaleChangePlanError(expected.path);
   }

@@ -29,7 +29,7 @@ export const PlanChangesInputSchema = z.object({
         path: z.string().min(1),
         content: z.string(),
         purpose: z.string().min(1),
-      })
+      }),
     )
     .min(1)
     .describe("Files to write. Paths are interpreted relative to the target repo root."),
@@ -37,7 +37,9 @@ export const PlanChangesInputSchema = z.object({
     .array(z.object({ path: z.string(), content: z.string() }))
     .optional()
     .default([])
-    .describe("Current contents of any files in `files` that already exist in the target repo. Used for conflict detection."),
+    .describe(
+      "Current contents of any files in `files` that already exist in the target repo. Used for conflict detection.",
+    ),
   suggested_commit: z
     .string()
     .optional()
@@ -81,7 +83,8 @@ export const planChangesDefinition = {
           },
           required: ["path", "content"],
         },
-        description: "Current contents of any files in `files` that already exist in the target repo.",
+        description:
+          "Current contents of any files in `files` that already exist in the target repo.",
       },
       suggested_commit: {
         type: "string",
@@ -115,8 +118,7 @@ export async function runPlanChanges(
 
   const { kept, conflicts } = detectConflicts(proposed, input.existing_files);
 
-  const suggestedCommit =
-    input.suggested_commit ?? `chore: ${input.description}`;
+  const suggestedCommit = input.suggested_commit ?? `chore: ${input.description}`;
 
   const announcement = buildAnnouncement({
     files: kept,
@@ -124,10 +126,7 @@ export async function runPlanChanges(
     suggestedCommit,
   });
   const capturedPlan = await captureFileStates(allowedRoot, kept);
-  const pendingPlan = planStore.store(
-    capturedPlan.files,
-    capturedPlan.expectedFiles,
-  );
+  const pendingPlan = planStore.store(capturedPlan.files, capturedPlan.expectedFiles);
 
   const response = {
     plan_id: pendingPlan.id,

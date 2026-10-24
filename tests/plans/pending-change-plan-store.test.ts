@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { PendingChangePlanStore, PlanStoreCapacityError } from "../../src/plans/pending-change-plan-store";
+import {
+  PendingChangePlanStore,
+  PlanStoreCapacityError,
+} from "../../src/plans/pending-change-plan-store";
 
-const files = [
-  { path: "notes/example.txt", content: "hello", purpose: "add a note" },
-];
+const files = [{ path: "notes/example.txt", content: "hello", purpose: "add a note" }];
 
 describe("PendingChangePlanStore", () => {
   it("stores an immutable pending plan", () => {
@@ -43,9 +44,7 @@ describe("PendingChangePlanStore", () => {
 
   it("includes expected filesystem state in plan identity", () => {
     const store = new PendingChangePlanStore();
-    const missing = store.store(files, [
-      { path: files[0].path, kind: "missing" },
-    ]);
+    const missing = store.store(files, [{ path: files[0].path, kind: "missing" }]);
     const existing = store.store(files, [
       { path: files[0].path, kind: "file", contentHash: "abc123" },
     ]);
@@ -71,13 +70,14 @@ describe("PendingChangePlanStore", () => {
 
   it("rejects repeated distinct plans at capacity without evicting active entries", () => {
     const store = new PendingChangePlanStore({ maxPlans: 3 });
-    const active = [0, 1, 2].map((index) => store.store([
-      { ...files[0], content: `plan ${index}` },
-    ]));
+    const active = [0, 1, 2].map((index) =>
+      store.store([{ ...files[0], content: `plan ${index}` }]),
+    );
 
     for (let index = 3; index < 100; index++) {
-      expect(() => store.store([{ ...files[0], content: `plan ${index}` }]))
-        .toThrow(PlanStoreCapacityError);
+      expect(() => store.store([{ ...files[0], content: `plan ${index}` }])).toThrow(
+        PlanStoreCapacityError,
+      );
     }
     for (const plan of active) expect(store.get(plan.id)).toBe(plan);
     expect(store.store([{ ...files[0], content: "plan 0" }])).toBe(active[0]);
@@ -108,15 +108,17 @@ describe("PendingChangePlanStore", () => {
     expect(store.store(unicodeFiles)).toBe(plan);
     expect(() => store.store(files)).toThrow(PlanStoreCapacityError);
     expect(store.get(plan.id)).toBe(plan);
-    expect(() => new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(unicodeFiles))
-      .toThrow(PlanStoreCapacityError);
+    expect(() => new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(unicodeFiles)).toThrow(
+      PlanStoreCapacityError,
+    );
   });
 
   it("counts file metadata and expected state in the payload budget", () => {
     const expectedFiles = [{ path: files[0].path, kind: "missing" as const }];
     const bytes = Buffer.byteLength(JSON.stringify({ files, expectedFiles }));
-    expect(() => new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(files, expectedFiles))
-      .toThrow(PlanStoreCapacityError);
+    expect(() =>
+      new PendingChangePlanStore({ maxBytes: bytes - 1 }).store(files, expectedFiles),
+    ).toThrow(PlanStoreCapacityError);
     const store = new PendingChangePlanStore({ maxBytes: bytes });
     const plan = store.store(files, expectedFiles);
     expect(store.get(plan.id)).toBe(plan);
@@ -139,7 +141,8 @@ describe("PendingChangePlanStore", () => {
   });
 
   it.each([0, -1, 1.5, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1])(
-    "rejects invalid resource limits: %s", (limit) => {
+    "rejects invalid resource limits: %s",
+    (limit) => {
       expect(() => new PendingChangePlanStore({ maxPlans: limit })).toThrow();
       expect(() => new PendingChangePlanStore({ maxBytes: limit })).toThrow();
     },

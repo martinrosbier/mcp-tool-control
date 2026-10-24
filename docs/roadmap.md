@@ -335,7 +335,7 @@ availability and execution across multiple servers.
 - Phases 1–6 establish the implemented architecture and reuse foundation.
 - Phase 7 security and reliability hardening is complete.
 - Phase 8 is in progress: clean-checkout validation and dependency auditing pass;
-   repository metadata, licensing, and release publication decisions remain.
+  repository metadata, licensing, and release publication decisions remain.
 - Phases 9–12 are optional future MCP integration work and do not block release.
 - Local validation on September 8, 2026: 139 tests across 19 files, typechecking,
   build, clean-checkout installation, and high-severity dependency auditing passed.
