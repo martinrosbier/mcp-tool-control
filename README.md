@@ -60,9 +60,43 @@ Start the bundled MCP stdio server with:
 npm start
 ```
 
-Configure an MCP-compatible client to execute `node` with the absolute path to
-`dist/server.js`. The launcher's current working directory becomes the allowed
-workspace root.
+### Use it from any MCP client (no clone needed)
+
+The published package ships an executable stdio server. Point any
+MCP-compatible client at it with `npx`; the client launches the server and its
+current working directory becomes the allowed workspace root.
+
+VS Code (`.vscode/mcp.json` or user `mcp.json`):
+
+```json
+{
+  "servers": {
+    "mcp-tool-control": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-tool-control"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "mcp-tool-control": {
+      "command": "npx",
+      "args": ["-y", "mcp-tool-control"],
+      "cwd": "/absolute/path/to/workspace"
+    }
+  }
+}
+```
+
+For a cloned checkout instead, configure the client to execute `node` with the
+absolute path to `dist/server.js`.
 
 The standalone stdio entrypoint intentionally keeps only the MCP server capability.
 It can inspect and plan, but it provides no path for an MCP caller to approve a
