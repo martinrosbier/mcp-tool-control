@@ -102,6 +102,30 @@ The standalone stdio entrypoint intentionally keeps only the MCP server capabili
 It can inspect and plan, but it provides no path for an MCP caller to approve a
 write plan.
 
+### Standalone use with human approval
+
+The package also ships a reference trusted host, `mcp-tool-control-host`. It
+serves the same MCP tools over stdio and additionally prompts a human on the
+controlling terminal whenever a plan is pending, so standalone use gets the
+full plan → approve → apply workflow:
+
+```json
+{
+  "servers": {
+    "mcp-tool-control": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "-p", "mcp-tool-control", "mcp-tool-control-host"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+Approval prompts use the terminal directly (`/dev/tty` or the Windows console);
+approval input never travels over the MCP channel. Without an interactive
+terminal the host fails closed: plans can be created but never approved.
+
 ## Embed in a trusted host
 
 Applications that need controlled writes should use the public composition API:
@@ -315,10 +339,9 @@ tests/
 ## Status
 
 The core architecture is implemented and covered by unit, integration, and
-trust-boundary attack tests. The project is licensed under Apache-2.0 and is
-prepared as version 1.0.0. Remaining release steps are clean-checkout
-verification, the release tag, and publication as a GitHub release and npm
-package; each requires an explicit maintainer action.
+trust-boundary attack tests. The project is released on npm and GitHub under
+the Apache-2.0 license; current development follows the post-release roadmap
+in [docs/roadmap.md](docs/roadmap.md).
 
 ## License and attribution
 

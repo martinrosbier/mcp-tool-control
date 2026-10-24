@@ -25,6 +25,13 @@ export interface ApprovalExecution extends ApprovalState {
 export interface TrustedApprovalController {
   approve(planId: string): ApprovalDecision;
   deny(planId: string): ApprovalDecision;
+  /**
+   * Returns the active pending plan so trusted host code can display the exact
+   * proposal before deciding. Never expose this through model-facing surfaces.
+   */
+  review(planId: string): PendingChangePlan | undefined;
+  /** Lists active plans that have no decision yet. */
+  listPending(): PendingChangePlan[];
 }
 
 export interface TrustedApprovalBoundary {
@@ -158,6 +165,8 @@ export function createTrustedApprovalBoundary(
   const host: TrustedApprovalController = Object.freeze({
     approve: (planId: string) => decide(planId, "approved"),
     deny: (planId: string) => decide(planId, "denied"),
+    review: (planId: string) => activePlan(planId),
+    listPending: () => plans.list().filter((plan) => !decisions.get(plan)),
   });
 
   return Object.freeze({ state, execution, host });

@@ -1,6 +1,6 @@
 {
   "name": "mcp-tool-control",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "A small TypeScript MCP foundation for controlled tool execution.",
   "license": "Apache-2.0",
@@ -13,7 +13,8 @@
   "main": "dist/runtime.js",
   "types": "dist/runtime.d.ts",
   "bin": {
-    "mcp-tool-control": "dist/server.js"
+    "mcp-tool-control": "dist/server.js",
+    "mcp-tool-control-host": "dist/host-cli.js"
   },
   "files": [
     "dist"

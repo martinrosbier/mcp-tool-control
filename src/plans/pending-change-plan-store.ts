@@ -108,4 +108,13 @@ export class PendingChangePlanStore {
 
     return plan;
   }
+
+  /** Returns every active plan, sweeping expired entries first. */
+  list(): PendingChangePlan[] {
+    const nowMs = this.now();
+    for (const [planId, plan] of this.plans) {
+      if (Date.parse(plan.expiresAt) <= nowMs) this.remove(planId);
+    }
+    return [...this.plans.values()];
+  }
 }
