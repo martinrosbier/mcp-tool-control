@@ -29,7 +29,22 @@ trustedReviewUi.onDeny((planId) => {
 The returned values are intentionally separate capabilities:
 
 - `server` exposes `inspect-text`, `plan-changes`, and `apply-changes` through MCP.
-- `approvalController` exposes `approve(planId)` and `deny(planId)` to trusted host code.
+- `approvalController` exposes `approve(planId)`, `deny(planId)`, `review(planId)`,
+  and `listPending()` to trusted host code.
+- `hostTools` exposes a policy-aware tool catalog and in-process execution to
+  trusted host code.
+
+## Host-side catalog and execution
+
+`hostTools` is the integration surface for control-plane style embeddings:
+
+- `hostTools.list()` returns every registered tool's definition and policy
+  (`read`, `plan`, or `write`, plus whether approval is required) without
+  exposing executable functions.
+- `hostTools.execute(name, input)` runs a tool in-process through the exact
+  validation, authorization, and audit path used by MCP calls. Write tools
+  still require an approved plan; nothing about this path weakens the approval
+  boundary.
 
 The optional audit callback may be synchronous or return a promise. Delivery is
 best-effort: sink throws and rejections are reported through a generic stderr

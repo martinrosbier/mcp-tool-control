@@ -20,6 +20,12 @@ export interface RegisteredTool {
   run(input: unknown): Promise<TextContent[]>;
 }
 
+/** Host-facing tool metadata: definition and policy, without executables. */
+export interface RegisteredToolInfo {
+  readonly definition: ToolDefinition;
+  readonly policy: ToolPolicy;
+}
+
 export class UnknownToolError extends Error {
   constructor(toolName: string) {
     super(`Unknown tool: ${toolName}`);
@@ -46,6 +52,13 @@ export class ToolRegistry {
 
   list(): ToolDefinition[] {
     return [...this.toolsByName.values()].map((tool) => tool.definition);
+  }
+
+  /** Host-facing catalog: definitions plus policy metadata, without executables. */
+  describe(): RegisteredToolInfo[] {
+    return [...this.toolsByName.values()].map((tool) =>
+      Object.freeze({ definition: tool.definition, policy: tool.policy }),
+    );
   }
 
   async execute(name: string, input: unknown): Promise<TextContent[]> {

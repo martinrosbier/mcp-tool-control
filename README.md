@@ -155,10 +155,13 @@ trustedReviewUi.onDeny((planId) => {
 });
 ```
 
-The two returned values are deliberately separate capabilities:
+The returned values are deliberately separate capabilities:
 
 - Give `server` to the MCP/model-facing transport.
 - Keep `approvalController` inside authenticated trusted host code.
+- Use `hostTools` only in trusted host code: it lists tool metadata with policy
+  information and executes tools in-process through the same approval-enforcing
+  path as MCP calls.
 
 Do not register the controller as an MCP tool or expose it through an
 unauthenticated HTTP, IPC, queue, or callback endpoint.
