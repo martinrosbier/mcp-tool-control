@@ -264,8 +264,10 @@ trusted approval boundary.
 
 ## Phase 11 — Integration Compatibility
 
-**Status: proposed.** Introduce only the minimal public API improvements needed
-to embed this library behind a separate control-plane or gateway layer.
+**Status: implemented (v1.3.0).** The runtime returns a host-side `hostTools`
+capability: a policy-aware tool catalog plus in-process execution through the
+same validation, authorization, and audit path as MCP calls. Further additions
+stay needs-driven.
 
 Discovery of external MCP servers, tool routing, remote connection lifecycle,
 and multi-server reliability are control-plane concerns and remain outside this
