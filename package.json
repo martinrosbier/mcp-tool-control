@@ -4,6 +4,15 @@
   "type": "module",
   "description": "A small TypeScript MCP foundation for controlled tool execution.",
   "license": "Apache-2.0",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "approval-workflow",
+    "controlled-execution",
+    "security",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/martinrosbier/mcp-tool-control.git"
