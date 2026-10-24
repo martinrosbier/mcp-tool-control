@@ -16,11 +16,17 @@ import { logAuditEvent } from "./utils/audit.js";
  */
 function openTerminalIo(): ReviewIo | undefined {
   try {
-    const input = fs.createReadStream(process.platform === "win32" ? "\\\\.\\CONIN$" : "/dev/tty");
-    const output = fs.createWriteStream(
-      process.platform === "win32" ? "\\\\.\\CONOUT$" : "/dev/tty",
-    );
+    const inputPath = process.platform === "win32" ? "\\\\.\\CONIN$" : "/dev/tty";
+    const outputPath = process.platform === "win32" ? "\\\\.\\CONOUT$" : "/dev/tty";
+    // openSync fails synchronously when there is no controlling terminal, so
+    // the try/catch actually engages. Later async stream errors are logged to
+    // stderr and never crash the MCP server.
+    const input = fs.createReadStream("", { fd: fs.openSync(inputPath, "r") });
+    const output = fs.createWriteStream("", { fd: fs.openSync(outputPath, "a") });
+    input.on("error", (error) => console.error("[mcp-tool-control] terminal input:", error));
+    output.on("error", (error) => console.error("[mcp-tool-control] terminal output:", error));
     const rl = readline.createInterface({ input, output, terminal: true });
+    rl.on("error", (error) => console.error("[mcp-tool-control] terminal prompt:", error));
     return {
       write: (text) => output.write(text),
       ask: (question) => new Promise((resolve) => rl.question(question, resolve)),
