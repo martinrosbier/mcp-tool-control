@@ -85,11 +85,7 @@ export class ToolRegistry {
     }
   }
 }
-import {
-  PolicyDeniedError,
-  validateToolPolicy,
-  type ToolPolicy,
-} from "../policy/tool-policy.js";
+import { PolicyDeniedError, validateToolPolicy, type ToolPolicy } from "../policy/tool-policy.js";
 import {
   createBestEffortAuditSink,
   generateRequestId,

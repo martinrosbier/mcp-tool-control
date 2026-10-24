@@ -136,11 +136,7 @@ export function createTrustedApprovalBoundary(
       try {
         const active = activePlan(plan.id);
         const decision = decisions.get(plan);
-        if (
-          active !== plan
-          || decision?.plan !== plan
-          || decision.status !== "approved"
-        ) {
+        if (active !== plan || decision?.plan !== plan || decision.status !== "approved") {
           throw new ApprovalNotExecutableError(plan.id);
         }
 

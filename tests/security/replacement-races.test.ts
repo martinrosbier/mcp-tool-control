@@ -1,11 +1,24 @@
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTrustedApprovalBoundary } from "../../src/approval/trusted-approval-boundary";
 import { PendingChangePlanStore } from "../../src/plans/pending-change-plan-store";
 import { PathOutsideRootError } from "../../src/security/contained-path";
-import { assertPlanFileStatesUnchanged, captureFileStates, StaleChangePlanError } from "../../src/security/file-state";
+import {
+  assertPlanFileStatesUnchanged,
+  captureFileStates,
+  StaleChangePlanError,
+} from "../../src/security/file-state";
 import { createApplyChangesTool } from "../../src/tools/apply-changes";
 import { PolicyDeniedError } from "../../src/policy/tool-policy";
 
@@ -16,7 +29,10 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 
 vi.mock("../../src/security/file-state", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/security/file-state")>();
-  return { ...actual, assertPlanFileStatesUnchanged: vi.fn(actual.assertPlanFileStatesUnchanged) };
+  return {
+    ...actual,
+    assertPlanFileStatesUnchanged: vi.fn(actual.assertPlanFileStatesUnchanged),
+  };
 });
 
 describe("replacement-time filesystem changes", () => {
@@ -37,9 +53,14 @@ describe("replacement-time filesystem changes", () => {
 
   async function approvedWrite(paths: string[]) {
     const plans = new PendingChangePlanStore();
-    const captured = await captureFileStates(allowedRoot, paths.map((target) => ({
-      path: target, content: "replacement", purpose: "race test",
-    })));
+    const captured = await captureFileStates(
+      allowedRoot,
+      paths.map((target) => ({
+        path: target,
+        content: "replacement",
+        purpose: "race test",
+      })),
+    );
     const plan = plans.store(captured.files, captured.expectedFiles);
     const approvals = createTrustedApprovalBoundary(plans);
     approvals.host.approve(plan.id);
@@ -150,7 +171,9 @@ describe("replacement-time filesystem changes", () => {
     });
 
     await expect(write.run()).rejects.toBeInstanceOf(PathOutsideRootError);
-    await expect(readFile(path.join(outside, "target.txt"), "utf8")).resolves.toBe("outside content");
+    await expect(readFile(path.join(outside, "target.txt"), "utf8")).resolves.toBe(
+      "outside content",
+    );
     await expect(readdir(outside)).resolves.toEqual(["target.txt"]);
     expect(rename).toHaveBeenCalledTimes(1);
     expect(write.status()).toBe("consumed");

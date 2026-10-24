@@ -63,15 +63,20 @@ describe.each(["throw", "reject"])("MCP workflow with audit sink %s", (mode) => 
     const applied = await call("apply-changes", args);
     expect(applied.isError).not.toBe(true);
     expect(applied.data.status).toBe("applied");
-    await expect(readFile(path.join(allowedRoot, "target.txt"), "utf8"))
-      .resolves.toBe("private file contents");
+    await expect(readFile(path.join(allowedRoot, "target.txt"), "utf8")).resolves.toBe(
+      "private file contents",
+    );
     expect(internalErrors).not.toHaveBeenCalled();
     const replay = await call("apply-changes", args);
     expect(replay.isError).toBe(true);
     expect(replay.data.code).toBe("APPROVAL_REQUIRED");
-    expect(vi.mocked(console.error).mock.calls.every(
-      (args) => args.length === 1 && args[0] === "[AUDIT] Audit delivery failed",
-    )).toBe(true);
+    expect(
+      vi
+        .mocked(console.error)
+        .mock.calls.every(
+          (args) => args.length === 1 && args[0] === "[AUDIT] Audit delivery failed",
+        ),
+    ).toBe(true);
   });
 
   it("preserves stale-state errors and concurrent content", async () => {

@@ -16,9 +16,7 @@ describe("trust boundary attacks", () => {
   let outsideRoot: string;
   let client: Client;
   let server: ReturnType<typeof createMcpToolControl>["server"];
-  let approvalController: ReturnType<
-    typeof createMcpToolControl
-  >["approvalController"];
+  let approvalController: ReturnType<typeof createMcpToolControl>["approvalController"];
 
   async function connectRuntime() {
     ({ server, approvalController } = createMcpToolControl({ allowedRoot }));
@@ -76,8 +74,9 @@ describe("trust boundary attacks", () => {
 
     expect(fakeApprovalTool.isError).toBe(true);
     expect(injectedApproval.isError).toBe(true);
-    await expect(readFile(path.join(allowedRoot, "example.txt"), "utf8"))
-      .rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(allowedRoot, "example.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("does not transfer approval to a plan with modified content", async () => {
@@ -131,8 +130,9 @@ describe("trust boundary attacks", () => {
 
     expect(traversal.isError).toBe(true);
     expect(linkEscape.isError).toBe(true);
-    await expect(readFile(path.join(outsideRoot, "escape.txt"), "utf8"))
-      .rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(outsideRoot, "escape.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("rejects a parent directory replaced by an escaping link after approval", async () => {
@@ -149,8 +149,9 @@ describe("trust boundary attacks", () => {
     });
 
     expect(result.isError).toBe(true);
-    await expect(readFile(path.join(outsideRoot, "escape.txt"), "utf8"))
-      .rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(outsideRoot, "escape.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("does not transfer approval to a recreated expired plan", async () => {
@@ -190,7 +191,8 @@ describe("trust boundary attacks", () => {
 
     expect(results.filter((result) => result.isError !== true)).toHaveLength(1);
     expect(results.filter((result) => result.isError === true)).toHaveLength(1);
-    await expect(readFile(path.join(allowedRoot, "example.txt"), "utf8"))
-      .resolves.toBe("written once");
+    await expect(readFile(path.join(allowedRoot, "example.txt"), "utf8")).resolves.toBe(
+      "written once",
+    );
   });
 });

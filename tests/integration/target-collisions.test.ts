@@ -31,7 +31,11 @@ describe("target collisions through MCP", () => {
       name: "plan-changes",
       arguments: {
         description: "collision test",
-        files: paths.map((target) => ({ path: target, content: "planned content", purpose: "test" })),
+        files: paths.map((target) => ({
+          path: target,
+          content: "planned content",
+          purpose: "test",
+        })),
       },
     });
     const item = result.content[0];
@@ -59,12 +63,14 @@ describe("target collisions through MCP", () => {
     expect(valid.data.files_to_write[0].path).toBe(path.join("Docs", "Readme.md"));
     runtime.approvalController.approve(valid.data.plan_id);
     const applied = await client.callTool({
-      name: "apply-changes", arguments: { plan_id: valid.data.plan_id },
+      name: "apply-changes",
+      arguments: { plan_id: valid.data.plan_id },
     });
     expect(applied.isError).not.toBe(true);
     await expect(readdir(allowedRoot)).resolves.toEqual(["Docs"]);
     await expect(readdir(path.join(allowedRoot, "Docs"))).resolves.toEqual(["Readme.md"]);
-    await expect(readFile(path.join(allowedRoot, "Docs", "Readme.md"), "utf8"))
-      .resolves.toBe("planned content");
+    await expect(readFile(path.join(allowedRoot, "Docs", "Readme.md"), "utf8")).resolves.toBe(
+      "planned content",
+    );
   });
 });

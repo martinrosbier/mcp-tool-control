@@ -14,9 +14,7 @@ describe("plan-changes tool", () => {
   it("returns the planner-only response shape", async () => {
     const input = {
       description: "add hello world",
-      files: [
-        { path: "hello.txt", content: "hi", purpose: "demo greeting" },
-      ],
+      files: [{ path: "hello.txt", content: "hi", purpose: "demo greeting" }],
     };
 
     const result = await runPlanChanges(planStore, input);
@@ -70,11 +68,15 @@ describe("plan-changes tool", () => {
       files: [{ path: "a.txt", content: "x", purpose: "first purpose" }],
     };
     const first = JSON.parse((await runPlanChanges(planStore, input))[0].text);
-    const second = JSON.parse((await runPlanChanges(planStore, {
-      ...input,
-      description: "different description",
-      files: [{ ...input.files[0], purpose: "different purpose" }],
-    }))[0].text);
+    const second = JSON.parse(
+      (
+        await runPlanChanges(planStore, {
+          ...input,
+          description: "different description",
+          files: [{ ...input.files[0], purpose: "different purpose" }],
+        })
+      )[0].text,
+    );
 
     expect(first.plan_id).toBe(second.plan_id);
   });
@@ -85,10 +87,14 @@ describe("plan-changes tool", () => {
       files: [{ path: "a.txt", content: "first", purpose: "demo" }],
     };
     const first = JSON.parse((await runPlanChanges(planStore, baseInput))[0].text);
-    const changed = JSON.parse((await runPlanChanges(planStore, {
-      ...baseInput,
-      files: [{ ...baseInput.files[0], content: "second" }],
-    }))[0].text);
+    const changed = JSON.parse(
+      (
+        await runPlanChanges(planStore, {
+          ...baseInput,
+          files: [{ ...baseInput.files[0], content: "second" }],
+        })
+      )[0].text,
+    );
 
     expect(first.plan_id).not.toBe(changed.plan_id);
   });
@@ -96,12 +102,8 @@ describe("plan-changes tool", () => {
   it("detects conflicts when an existing file has different content", async () => {
     const input = {
       description: "update README",
-      files: [
-        { path: "README.md", content: "new content", purpose: "refresh" },
-      ],
-      existing_files: [
-        { path: "README.md", content: "old original content" },
-      ],
+      files: [{ path: "README.md", content: "new content", purpose: "refresh" }],
+      existing_files: [{ path: "README.md", content: "old original content" }],
     };
 
     const result = await runPlanChanges(planStore, input);
@@ -133,14 +135,22 @@ describe("plan-changes tool", () => {
       description: "review a setting change",
       files: [{ path: "preview-example.txt", content: "header\nmode=write", purpose: "test" }],
     };
-    const first = JSON.parse((await runPlanChanges(planStore, {
-      ...input,
-      existing_files: [{ path: "preview-example.txt", content: "header\nmode=read" }],
-    }))[0].text);
-    const second = JSON.parse((await runPlanChanges(planStore, {
-      ...input,
-      existing_files: [{ path: "preview-example.txt", content: "different supplied metadata" }],
-    }))[0].text);
+    const first = JSON.parse(
+      (
+        await runPlanChanges(planStore, {
+          ...input,
+          existing_files: [{ path: "preview-example.txt", content: "header\nmode=read" }],
+        })
+      )[0].text,
+    );
+    const second = JSON.parse(
+      (
+        await runPlanChanges(planStore, {
+          ...input,
+          existing_files: [{ path: "preview-example.txt", content: "different supplied metadata" }],
+        })
+      )[0].text,
+    );
 
     expect(first.conflicts[0]).toMatchObject({
       first_difference: { line: 2, column: 6 },
@@ -172,12 +182,8 @@ describe("plan-changes tool", () => {
 
   it("rejects invalid input via Zod schema", () => {
     // Missing required `files`
-    expect(() =>
-      PlanChangesInputSchema.parse({ description: "nope" })
-    ).toThrow();
+    expect(() => PlanChangesInputSchema.parse({ description: "nope" })).toThrow();
     // Empty files array
-    expect(() =>
-      PlanChangesInputSchema.parse({ description: "nope", files: [] })
-    ).toThrow();
+    expect(() => PlanChangesInputSchema.parse({ description: "nope", files: [] })).toThrow();
   });
 });

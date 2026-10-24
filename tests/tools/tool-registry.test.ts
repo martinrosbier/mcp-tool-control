@@ -51,7 +51,9 @@ describe("ToolRegistry", () => {
   });
 
   it("rejects duplicate names at startup", () => {
-    expect(() => new ToolRegistry([makeTool("same"), makeTool("same")])).toThrow("Duplicate tool: same");
+    expect(() => new ToolRegistry([makeTool("same"), makeTool("same")])).toThrow(
+      "Duplicate tool: same",
+    );
   });
 
   it("rejects write tools that do not require approval", () => {
@@ -73,11 +75,13 @@ describe("ToolRegistry", () => {
       "Tool execution requires approval",
     );
     expect(tool.run).not.toHaveBeenCalled();
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: "tool_execution",
-      outcome: "error",
-      errorName: "Error",
-    }));
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "tool_execution",
+        outcome: "error",
+        errorName: "Error",
+      }),
+    );
   });
 
   it("rejects approval-gated tools without a trusted authorizer", () => {
@@ -127,7 +131,9 @@ describe("ToolRegistry", () => {
       const denied = new PolicyDeniedError("not approved");
       const tool = makeTool("write-file");
       tool.policy = { access: "write", requiresApproval: true };
-      tool.authorize = () => { throw denied; };
+      tool.authorize = () => {
+        throw denied;
+      };
       const audit = failingAudit();
       const registry = new ToolRegistry([tool], audit);
 

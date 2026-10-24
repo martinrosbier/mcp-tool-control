@@ -12,10 +12,7 @@ export class PolicyDeniedError extends Error {
   }
 }
 
-export function validateToolPolicy(
-  policy: ToolPolicy,
-  hasTrustedAuthorizer: boolean,
-): void {
+export function validateToolPolicy(policy: ToolPolicy, hasTrustedAuthorizer: boolean): void {
   if (policy.access === "write" && !policy.requiresApproval) {
     throw new Error("Write tools must require approval");
   }

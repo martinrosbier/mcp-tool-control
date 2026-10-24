@@ -39,10 +39,7 @@ export function toSafeToolError(error: unknown): SafeToolError {
   if (error instanceof UnknownToolError) {
     return { code: "UNKNOWN_TOOL", message: "Unknown tool" };
   }
-  if (
-    error instanceof PolicyDeniedError
-    || error instanceof ApprovalNotExecutableError
-  ) {
+  if (error instanceof PolicyDeniedError || error instanceof ApprovalNotExecutableError) {
     return {
       code: "APPROVAL_REQUIRED",
       message: "Tool execution is not authorized",
@@ -55,9 +52,9 @@ export function toSafeToolError(error: unknown): SafeToolError {
     };
   }
   if (
-    error instanceof InvalidPlanTargetError
-    || error instanceof DuplicatePlanTargetError
-    || error instanceof NestedPlanTargetError
+    error instanceof InvalidPlanTargetError ||
+    error instanceof DuplicatePlanTargetError ||
+    error instanceof NestedPlanTargetError
   ) {
     return {
       code: "INVALID_PLAN_TARGET",

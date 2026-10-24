@@ -1,8 +1,5 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   createTrustedApprovalBoundary,
   type TrustedApprovalController,
@@ -29,9 +26,7 @@ export interface McpToolControlRuntime {
   readonly approvalController: TrustedApprovalController;
 }
 
-export function createMcpToolControl(
-  options: McpToolControlOptions,
-): McpToolControlRuntime {
+export function createMcpToolControl(options: McpToolControlOptions): McpToolControlRuntime {
   const planStore = new PendingChangePlanStore({
     maxPlans: options.maxPendingPlans,
     maxBytes: options.maxPendingPlanBytes,
@@ -39,15 +34,14 @@ export function createMcpToolControl(
   const approvalBoundary = createTrustedApprovalBoundary(planStore, {
     audit: options.audit,
   });
-  const registry = new ToolRegistry([
-    inspectTextTool,
-    createPlanChangesTool(planStore, options.allowedRoot),
-    createApplyChangesTool(
-      planStore,
-      approvalBoundary.execution,
-      options.allowedRoot,
-    ),
-  ], options.audit);
+  const registry = new ToolRegistry(
+    [
+      inspectTextTool,
+      createPlanChangesTool(planStore, options.allowedRoot),
+      createApplyChangesTool(planStore, approvalBoundary.execution, options.allowedRoot),
+    ],
+    options.audit,
+  );
 
   const server = new Server(
     { name: "mcp-tool-control", version: SERVER_VERSION },
@@ -59,10 +53,7 @@ export function createMcpToolControl(
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       return {
-        content: await registry.execute(
-          request.params.name,
-          request.params.arguments,
-        ),
+        content: await registry.execute(request.params.name, request.params.arguments),
       };
     } catch (error) {
       options.onInternalError?.(error);

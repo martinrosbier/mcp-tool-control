@@ -23,7 +23,7 @@ export interface Conflict {
  */
 export function detectConflicts(
   proposed: FileToWrite[],
-  existing: ExistingFile[]
+  existing: ExistingFile[],
 ): { kept: FileToWrite[]; conflicts: Conflict[] } {
   const kept: FileToWrite[] = [];
   const conflicts: Conflict[] = [];
@@ -64,7 +64,11 @@ function previewDifference(existing: string, proposed: string): Omit<Conflict, "
   let offset = 0;
   let line = 1;
   let lineStart = 0;
-  while (offset < existing.length && offset < proposed.length && existing[offset] === proposed[offset]) {
+  while (
+    offset < existing.length &&
+    offset < proposed.length &&
+    existing[offset] === proposed[offset]
+  ) {
     if (existing[offset] === "\n") {
       line++;
       lineStart = offset + 1;
@@ -87,8 +91,9 @@ function previewDifference(existing: string, proposed: string): Omit<Conflict, "
     existing_excerpt: excerpt(existing),
     proposed_excerpt: excerpt(proposed),
     first_difference: { line, column: offset - lineStart + 1 },
-    preview_truncated: start > 0
-      || start + EXCERPT_LENGTH < existing.length
-      || start + EXCERPT_LENGTH < proposed.length,
+    preview_truncated:
+      start > 0 ||
+      start + EXCERPT_LENGTH < existing.length ||
+      start + EXCERPT_LENGTH < proposed.length,
   };
 }

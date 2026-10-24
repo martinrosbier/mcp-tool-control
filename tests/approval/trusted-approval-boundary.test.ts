@@ -5,12 +5,13 @@ import {
   PendingPlanUnavailableError,
   createTrustedApprovalBoundary,
 } from "../../src/approval/trusted-approval-boundary";
-import { PendingChangePlanStore, PlanStoreCapacityError } from "../../src/plans/pending-change-plan-store";
+import {
+  PendingChangePlanStore,
+  PlanStoreCapacityError,
+} from "../../src/plans/pending-change-plan-store";
 import type { AuditLogEntry } from "../../src/utils/audit";
 
-const files = [
-  { path: "notes/example.txt", content: "hello", purpose: "add a note" },
-];
+const files = [{ path: "notes/example.txt", content: "hello", purpose: "add a note" }];
 
 describe("createTrustedApprovalBoundary", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -44,18 +45,24 @@ describe("createTrustedApprovalBoundary", () => {
     boundary.host.approve(plan.id);
     boundary.execution.consume(plan);
 
-    expect(audit).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      eventType: "approval_decision",
-      outcome: "success",
-      planId: plan.id,
-      decision: "approved",
-    }));
-    expect(audit).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      eventType: "approval_decision",
-      outcome: "success",
-      planId: plan.id,
-      decision: "consume",
-    }));
+    expect(audit).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        eventType: "approval_decision",
+        outcome: "success",
+        planId: plan.id,
+        decision: "approved",
+      }),
+    );
+    expect(audit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        eventType: "approval_decision",
+        outcome: "success",
+        planId: plan.id,
+        decision: "consume",
+      }),
+    );
   });
 
   it("audits rejected approval attempts", () => {
@@ -65,22 +72,22 @@ describe("createTrustedApprovalBoundary", () => {
 
     expect(() => boundary.host.approve("plan_missing")).toThrow();
 
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: "approval_decision",
-      outcome: "denied",
-      planId: "plan_missing",
-      decision: "approved",
-      errorName: "PendingPlanUnavailableError",
-    }));
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "approval_decision",
+        outcome: "denied",
+        planId: "plan_missing",
+        decision: "approved",
+        errorName: "PendingPlanUnavailableError",
+      }),
+    );
   });
 
   it("rejects decisions for unknown plans", () => {
     const plans = new PendingChangePlanStore();
     const boundary = createTrustedApprovalBoundary(plans);
 
-    expect(() => boundary.host.approve("plan_missing")).toThrow(
-      PendingPlanUnavailableError,
-    );
+    expect(() => boundary.host.approve("plan_missing")).toThrow(PendingPlanUnavailableError);
   });
 
   it("makes repeated identical decisions idempotent", () => {
@@ -99,9 +106,7 @@ describe("createTrustedApprovalBoundary", () => {
     const boundary = createTrustedApprovalBoundary(plans);
     boundary.host.approve(plan.id);
 
-    expect(() => boundary.host.deny(plan.id)).toThrow(
-      ApprovalAlreadyDecidedError,
-    );
+    expect(() => boundary.host.deny(plan.id)).toThrow(ApprovalAlreadyDecidedError);
   });
 
   it("consumes approval exactly once through the execution capability", () => {
@@ -118,9 +123,7 @@ describe("createTrustedApprovalBoundary", () => {
     expect(() => boundary.execution.consume(plan)).toThrow(
       "Plan does not have executable approval",
     );
-    expect(() => boundary.host.approve(plan.id)).toThrow(
-      ApprovalAlreadyDecidedError,
-    );
+    expect(() => boundary.host.approve(plan.id)).toThrow(ApprovalAlreadyDecidedError);
   });
 
   it("invalidates approval state when the pending plan expires", () => {
@@ -133,9 +136,7 @@ describe("createTrustedApprovalBoundary", () => {
     now = 1_500;
 
     expect(boundary.state.get(plan.id)).toBeUndefined();
-    expect(() => boundary.host.approve(plan.id)).toThrow(
-      PendingPlanUnavailableError,
-    );
+    expect(() => boundary.host.approve(plan.id)).toThrow(PendingPlanUnavailableError);
   });
 
   it("does not transfer approval to a recreated plan with the same identifier", () => {
@@ -169,7 +170,8 @@ describe("createTrustedApprovalBoundary", () => {
   });
 
   it.each(["approved", "denied", "consumed"] as const)(
-    "does not inherit %s decisions after insertion cleans expired plans", (status) => {
+    "does not inherit %s decisions after insertion cleans expired plans",
+    (status) => {
       let now = 0;
       const plans = new PendingChangePlanStore({ maxPlans: 1, ttlMs: 100, now: () => now });
       const boundary = createTrustedApprovalBoundary(plans, { now: () => now });

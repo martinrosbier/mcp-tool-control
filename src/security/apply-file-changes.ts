@@ -72,12 +72,14 @@ export async function applyFileChangesSafely(
     }
     return appliedPaths;
   } finally {
-    await Promise.all(staged.map(async ({ temporaryPath }) => {
-      try {
-        await unlink(temporaryPath);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      }
-    }));
+    await Promise.all(
+      staged.map(async ({ temporaryPath }) => {
+        try {
+          await unlink(temporaryPath);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        }
+      }),
+    );
   }
 }

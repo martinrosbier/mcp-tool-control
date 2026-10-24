@@ -22,10 +22,7 @@ describe("applyFileChangesSafely", () => {
     const captured = await captureFileStates(allowedRoot, [
       { path: targetPath, content, purpose: "test" },
     ]);
-    return new PendingChangePlanStore().store(
-      captured.files,
-      captured.expectedFiles,
-    );
+    return new PendingChangePlanStore().store(captured.files, captured.expectedFiles);
   }
 
   it("safely replaces an existing file", async () => {
@@ -34,9 +31,11 @@ describe("applyFileChangesSafely", () => {
     const plan = await createPlan("example.txt", "after");
     let consumed = false;
 
-    await expect(applyFileChangesSafely(allowedRoot, plan, () => {
-      consumed = true;
-    })).resolves.toEqual(["example.txt"]);
+    await expect(
+      applyFileChangesSafely(allowedRoot, plan, () => {
+        consumed = true;
+      }),
+    ).resolves.toEqual(["example.txt"]);
 
     expect(consumed).toBe(true);
     await expect(readFile(target, "utf8")).resolves.toBe("after");
@@ -46,10 +45,12 @@ describe("applyFileChangesSafely", () => {
     const plan = await createPlan("example.txt", "after");
     let consumed = false;
 
-    await expect(applyFileChangesSafely(allowedRoot, plan, () => {
-      consumed = true;
-      rmSync(allowedRoot, { recursive: true, force: true });
-    })).rejects.toThrow();
+    await expect(
+      applyFileChangesSafely(allowedRoot, plan, () => {
+        consumed = true;
+        rmSync(allowedRoot, { recursive: true, force: true });
+      }),
+    ).rejects.toThrow();
 
     expect(consumed).toBe(true);
   });

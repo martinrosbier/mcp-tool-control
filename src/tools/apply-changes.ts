@@ -19,12 +19,7 @@ export function createApplyChangesTool(
     const plan = plans.get(planId);
     const decision = approvals.get(planId);
 
-    if (
-      !plan
-      || !decision
-      || decision.status !== "approved"
-      || decision.plan !== plan
-    ) {
+    if (!plan || !decision || decision.status !== "approved" || decision.plan !== plan) {
       throw new PolicyDeniedError("Plan is not approved for execution");
     }
 
@@ -58,21 +53,21 @@ export function createApplyChangesTool(
     },
     async run(rawInput) {
       const plan = requireApprovedPlan(rawInput);
-      const appliedPaths = await applyFileChangesSafely(
-        allowedRoot,
-        plan,
-        () => { approvals.consume(plan); },
-      );
-      return [{
-        type: "text",
-        text: JSON.stringify({
-          plan_id: plan.id,
-          status: "applied",
-          file_count: plan.files.length,
-          applied_paths: appliedPaths,
-          message: "Approved plan was applied and its approval was consumed.",
-        }),
-      }];
+      const appliedPaths = await applyFileChangesSafely(allowedRoot, plan, () => {
+        approvals.consume(plan);
+      });
+      return [
+        {
+          type: "text",
+          text: JSON.stringify({
+            plan_id: plan.id,
+            status: "applied",
+            file_count: plan.files.length,
+            applied_paths: appliedPaths,
+            message: "Approved plan was applied and its approval was consumed.",
+          }),
+        },
+      ];
     },
   };
 }
