@@ -296,6 +296,9 @@ preserves the record of that decision.
   GitHub remote, hosted CI was removed in favor of canonical local validation,
   clean-checkout verification passed, and the `v1.0.0` tag, GitHub release, and
   npm package (`mcp-tool-control@1.0.0`) are published.
+- Phase 9 (standalone usability) shipped in v1.1.0 and Phase 10 (terminal
+  trusted-host reference) in v1.2.0; both releases are published on npm and
+  GitHub.
 - Post-release scope is deliberately narrow: standalone usability (Phase 9),
   a proposed trusted-host reference implementation (Phase 10), minimal
   integration compatibility (Phase 11), and ongoing maintenance (Phase 12).
