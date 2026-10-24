@@ -1,7 +1,7 @@
 # Development Roadmap
 
 This roadmap tracks development of `mcp-tool-control`, from the initial TypeScript
-foundation through the first release and optional support for external MCP servers.
+foundation through the first release and a deliberately narrow post-release scope.
 Completed milestones and remaining release work are based on the implementation
 review at commit `05d539b`. Future phases describe proposed work, not implemented
 capabilities or requirements for the first release.
@@ -145,7 +145,7 @@ removed by release decision; `npm run check` is the canonical validation task.**
 
 ## Phase 7 — Security and Reliability Hardening
 
-**Status: in progress.** Steps 1–7 are implemented. Steps 8 and 9 were reviewed
+**Status: complete.** Steps 1–7 are implemented. Steps 8 and 9 were reviewed
 and require no additional change at this time.
 
 1. **Revalidate targets immediately before replacement.**
@@ -234,103 +234,55 @@ as part of the relevant change rather than as a separate development phase.
    - Tag and publish through the chosen distribution process once verification passes.
    - Do not assume npm publication is required for a reusable reference repository.
 
-## Phase 9 — External MCP Server Discovery
+## Phase 9 — Standalone Usability (v1.1)
 
-**Status: future / optional.** Begins after Phase 8 if external server support is
-needed. The first release does not depend on this phase.
+**Status: implemented and validated; pending commit and release.**
 
-1. **Connect to configured MCP servers.**
-   - Let the trusted host configure server connections and identities.
-   - Enumerate advertised tools and their relevant metadata.
-2. **Normalize discovered tool metadata.**
-   - Represent tools consistently within the host.
-   - Preserve the source server and original tool identity.
-3. **Resolve tool name collisions.**
-   - Distinguish tools with the same name across servers.
-   - Reject ambiguous references before invocation.
-4. **Refresh discovery after reconnects.**
-   - Detect added, removed, or changed tools.
-   - Invalidate outdated discovery results.
-5. **Keep discovery separate from authorization.**
-   - Treat advertised tools and metadata as information to evaluate.
-   - Discovery alone grants neither exposure to callers nor execution authority.
+1. **Runnable npm binary.**
+   - Ship a `bin` entry and executable shebang so MCP clients can launch the
+     stdio server with `npx -y mcp-tool-control`.
+2. **Client configuration examples.**
+   - Document copy-paste configuration for common MCP clients.
+   - The launcher's working directory remains the allowed workspace root.
+3. **Preserve fail-closed writes.**
+   - The standalone server still provides no path for an MCP caller to approve
+     or apply a write plan.
 
-Discovery is limited to MCP tools. Model-based recommendations, provider-specific
-tool routing, and catalogs of unrelated APIs, databases, or shell commands remain
-outside the project scope.
+## Phase 10 — Trusted-Host Reference Implementation
 
-## Phase 10 — Policy and Approval Across MCP Servers
+**Status: proposed.** Provide a minimal terminal-based trusted host that:
 
-**Status: future / optional.** Depends on external server discovery.
+- Receives a change plan and displays the proposed writes.
+- Obtains explicit human approval through the trusted approval controller.
+- Applies only the exact approved plan instance.
+- Preserves every existing security invariant.
 
-1. **Assign host-owned tool policies.**
-   - Apply `read`, `plan`, and `write` classifications where appropriate.
-   - Keep policy decisions under trusted host control; remote declarations alone
-     do not establish trust.
-2. **Control which tools callers can access.**
-   - Expose only tools permitted by host policy.
-   - Evaluate policy against both server identity and tool identity.
-3. **Require approval for configured privileged operations.**
-   - Bind trusted approval to the intended server, tool, and invocation arguments.
-   - Preserve approval consumption and replay protection at the local boundary.
-4. **Preserve tool origin throughout execution.**
-   - Carry server and tool identity into authorization and audit events.
-   - Prevent name collisions or changed discovery metadata from selecting a
-     different operation under an existing authorization.
-5. **Define the remote execution trust boundary.**
-   - Make the host responsible for server trust, tool exposure, and policy.
-   - Distinguish local permission to invoke a tool from guarantees about how the
-     remote server performs its side effects.
-   - Do not extend local filesystem containment or stale-state guarantees to
-     arbitrary remote tools without corresponding enforcement.
+This is the preferred answer to standalone write usability. An ungated
+direct-write mode remains rejected: ordinary MCP input must never bypass the
+trusted approval boundary.
 
-## Phase 11 — MCP Transport and Remote Server Hardening
+## Phase 11 — Integration Compatibility
 
-**Status: future / optional.** Covers individual remote connections and invocations.
+**Status: proposed.** Introduce only the minimal public API improvements needed
+to embed this library behind a separate control-plane or gateway layer.
 
-1. **Manage connection and session lifecycle.**
-   - Define connection, disconnection, and reconnect behavior.
-   - Isolate sessions where applicable and make authentication requirements explicit.
-2. **Handle timeouts and cancellation.**
-   - Bound invocation duration and propagate cancellation where supported.
-   - Treat interrupted calls as potentially unresolved; cancellation does not prove
-     that a remote side effect was prevented.
-3. **Validate remote responses.**
-   - Handle malformed protocol messages and unexpected response data.
-   - Normalize remote failures into safe, useful error categories.
-4. **Handle unavailable servers and tools.**
-   - Report connection failures and tools removed between discovery and invocation.
-   - Preserve server and tool identity when reporting failures to trusted diagnostics.
-5. **Bound remote resource use.**
-   - Introduce connection, response, and concurrency limits where justified.
-   - Test failure paths and resource cleanup.
+Discovery of external MCP servers, tool routing, remote connection lifecycle,
+and multi-server reliability are control-plane concerns and remain outside this
+project's scope.
 
-Use the official MCP SDK's transport and authentication facilities where suitable.
-A custom OAuth provider or a generic remote-agent protocol is outside this phase.
+## Phase 12 — Maintenance
 
-## Phase 12 — Multi-Server Reliability
+**Status: ongoing.**
 
-**Status: future / optional.** Builds on connection hardening to coordinate tool
-availability and execution across multiple servers.
+- Security corrections and compatibility updates.
+- Regression testing and documentation improvements.
+- `npm run check` remains the canonical validation command.
 
-1. **Track server health and tool availability.**
-   - Refresh capabilities as servers reconnect or become unavailable.
-   - Invalidate stale entries without mixing tools from different servers.
-2. **Maintain tool identity across connection changes.**
-   - Preserve explicit handling of duplicate names and changed capabilities.
-   - Require policy reevaluation when relevant server or tool metadata changes.
-3. **Coordinate invocation failures.**
-   - Handle unavailable tools, timeouts, and cancellation consistently across servers.
-   - Keep failures attributable to the originating server and invocation.
-4. **Retry only when execution semantics permit it.**
-   - Require evidence that retry is safe, such as known execution state or an
-     applicable idempotency guarantee.
-   - Never retry a privileged or mutating operation solely because its transport
-     failed; the operation may already have completed.
-5. **Correlate audit events across servers.**
-   - Link discovery changes, policy decisions, and invocation outcomes using
-     structural identifiers.
-   - Preserve audit failure isolation and avoid recording sensitive payloads.
+Earlier roadmap drafts assigned external MCP server discovery, cross-server
+policy and approval, remote transport hardening, and multi-server reliability
+to this project. Those requirements were reviewed and reassigned out of this
+library's scope; they belong to a separate control-plane layer. This note
+preserves the record of that decision.
 
 ## Current Status
 
@@ -343,7 +295,11 @@ availability and execution across multiple servers.
   GitHub remote, hosted CI was removed in favor of canonical local validation,
   clean-checkout verification passed, and the `v1.0.0` tag, GitHub release, and
   npm package (`mcp-tool-control@1.0.0`) are published.
-- Phases 9–12 are optional future MCP integration work and do not block release.
+- Post-release scope is deliberately narrow: standalone usability (Phase 9),
+  a proposed trusted-host reference implementation (Phase 10), minimal
+  integration compatibility (Phase 11), and ongoing maintenance (Phase 12).
+  Discovery, routing, remote server lifecycle, and multi-server reliability
+  are out of scope for this library.
 - Clean-checkout validation on October 24, 2026 (Windows, Node 22.15.0,
   npm 10.9.2, commit `9e7b65e`, fresh `npm ci` in an isolated git worktree):
   formatting, lint, typechecking, 139 tests across 19 files, build, and a
@@ -360,7 +316,8 @@ and release verification passes.
 
 Keep `mcp-tool-control` a small, understandable MCP control layer. Its scope covers
 tool policy, trusted approval, controlled execution, filesystem checks, and audit
-boundaries, with discovery and remote server coordination as optional extensions.
+boundaries. Discovery, gateway routing, and remote or multi-server coordination
+are out of scope for this library.
 
 Stop adding features when the selected phases meet their requirements and tests.
 Future phases are separate development decisions, not unfinished first-release work.
@@ -369,4 +326,6 @@ Chat orchestration, model-provider gateways, generic agent runtimes and memory,
 PII and moderation systems, non-MCP API/database/shell orchestration, generic
 capability recommendation, and UI frameworks belong in a separate project.
 Custom OAuth providers, REST approval services, databases, queues, cloud
-infrastructure, and generic policy languages are not part of this roadmap.
+infrastructure, and generic policy languages are not part of this roadmap. MCP
+server discovery, gateway routing, and multi-server reliability belong to a
+separate control-plane project, not to this library.
