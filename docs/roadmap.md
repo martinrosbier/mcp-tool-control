@@ -236,7 +236,7 @@ as part of the relevant change rather than as a separate development phase.
 
 ## Phase 9 — Standalone Usability (v1.1)
 
-**Status: implemented and validated; pending commit and release.**
+**Status: complete (v1.1.0).**
 
 1. **Runnable npm binary.**
    - Ship a `bin` entry and executable shebang so MCP clients can launch the
