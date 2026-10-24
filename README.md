@@ -1,5 +1,8 @@
 # MCP Tool Control
 
+[![npm version](https://img.shields.io/npm/v/mcp-tool-control)](https://www.npmjs.com/package/mcp-tool-control)
+[![license](https://img.shields.io/npm/l/mcp-tool-control)](LICENSE)
+
 An opinionated TypeScript MCP reference implementation for controlled tool
 execution.
 
