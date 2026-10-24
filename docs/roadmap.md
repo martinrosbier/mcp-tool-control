@@ -212,7 +212,7 @@ as part of the relevant change rather than as a separate development phase.
 
 ## Phase 8 — Release Preparation
 
-**Status: in progress.**
+**Status: complete.**
 
 1. **Verify from a clean checkout.**
    - Run `npm ci` and `npm run check`, plus configured repository checks.
@@ -337,12 +337,12 @@ availability and execution across multiple servers.
 - Reviewed source baseline: `05d539b` (`docs: finalize README`).
 - Phases 1–6 establish the implemented architecture and reuse foundation.
 - Phase 7 security and reliability hardening is complete.
-- Phase 8 is in progress: dependencies were upgraded (MCP SDK 1.32.2, Zod 4.6.7)
-  with a zero-vulnerability audit, Apache-2.0 licensing and third-party
-  attribution are in place, repository metadata points at the GitHub remote,
-  hosted CI was removed in favor of canonical local validation, and clean-
-  checkout verification passed. The `v1.0.0` tag and publication (GitHub
-  release and npm package) remain.
+- Phase 8 release preparation is complete: dependencies were upgraded (MCP SDK
+  1.32.2, Zod 4.6.7) with a zero-vulnerability audit, Apache-2.0 licensing and
+  third-party attribution are in place, repository metadata points at the
+  GitHub remote, hosted CI was removed in favor of canonical local validation,
+  clean-checkout verification passed, and the `v1.0.0` tag, GitHub release, and
+  npm package (`mcp-tool-control@1.0.0`) are published.
 - Phases 9–12 are optional future MCP integration work and do not block release.
 - Clean-checkout validation on October 24, 2026 (Windows, Node 22.15.0,
   npm 10.9.2, commit `9e7b65e`, fresh `npm ci` in an isolated git worktree):
